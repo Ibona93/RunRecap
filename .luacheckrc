@@ -9,6 +9,8 @@ read_globals = {
 	"C_Timer", "CreateFrame", "CreateFont", "UIParent", "GameTooltip", "DEFAULT_CHAT_FRAME",
 	"GetLocale", "GetBuildInfo", "InCombatLockdown", "IsShiftKeyDown",
 	"GameFontHighlightSmall", "GameFontNormal", "STANDARD_TEXT_FONT", "unpack",
+	"GetInstanceInfo", "GetNumLootItems", "GetLootSlotLink", "GetLootSourceInfo", "CombatLogGetCurrentEventInfo",
+	"PlaySound", "GetTime", "date", "strsplit",
 }
 
 -- Test files mock the WoW API and set globals on purpose.

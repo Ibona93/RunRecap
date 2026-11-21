@@ -59,6 +59,22 @@ _G.GetLocale = function() return "deDE" end
 _G.GetBuildInfo = function() return "1.60.1", "70707", "Nov 4 2026", 16001 end
 _G.SlashCmdList = {}
 _G.unpack = _G.unpack or table.unpack
+_G.strsplit = function(sep, str)
+	local out = {}
+	for part in (str .. sep):gmatch("(.-)%" .. sep) do out[#out + 1] = part end
+	return unpack(out)
+end
+_G.GetTime = function() return 1234.5 end
+_G.GetInstanceInfo = function() return "The Deadmines", "party", 1, "Normal", 5, 0, false, 36 end
+_G.GetNumLootItems = function() return 2 end
+_G.GetLootSlotLink = function(slot) return slot == 1 and "|cff0070dd|Hitem:5191::::::::|h[Cruel Barb]|h|r" or nil end
+_G.GetLootSourceInfo = function(slot) return "Creature-0-1-36-4-647-0000ABC", 1 end
+local cleu = {}
+_G.CombatLogGetCurrentEventInfo = function() return unpack(cleu) end
+local played = {}
+_G.PlaySound = function(id) played[#played + 1] = id return id ~= 17316 end
+_G.C_Timer = { After = function(_, fn) fn() end }
+_G.LOOT_ITEM = "%s receives loot: %s."
 
 -------------------------------------------------------------------------------
 -- Load the addon in TOC order
@@ -126,6 +142,50 @@ for _, cmd in ipairs({ "", "help", "debug", "debug", "  HELP  " }) do
 	check(("/recap %q runs and prints"):format(cmd), ok and #chat > 0, err)
 end
 check("/recap debug toggles twice back to off", ns.db.debug == false)
+
+print("Probe")
+do
+	local P = ns.Probe
+	check("GUID shortened to NPC ID", P.ShortGUID("Creature-0-1-36-4-647-0000ABC") == "Creature npc=647")
+	chat = {}
+	ok, err = pcall(SlashCmdList.RUNRECAP, "probe")
+	check("/recap probe starts recording", ok and ns.db.probeActive == true and #ns.db.probe > 5, err)
+	local function has(pattern)
+		for _, line in ipairs(ns.db.probe) do if line:find(pattern) then return true end end
+		return false
+	end
+	check("start snapshot: client, API list, global strings, instance", has("START | client 1.60.1") and has("GetLootSourceInfo=yes")
+		and has('LOOT_ITEM = "%%s receives loot') and has("LOOT_ROLL_WON = MISSING") and has('"The Deadmines"'))
+	ok, err = pcall(fire, "ENCOUNTER_END", 1144, "Edwin VanCleef", 1, 5, 1)
+	check("ENCOUNTER_END recorded with instance info", ok and has('ENCOUNTER_END | 1144, "Edwin VanCleef", 1, 5, 1 | instance: "The Deadmines"'), err)
+	ok, err = pcall(fire, "LOOT_OPENED")
+	check("loot window: slot link and source NPC", ok and has("LOOT_SLOT | 1 .*Cruel Barb.*<%- Creature npc=647 x1")
+		and has("LOOT_SLOT | 2 %(money/no link%)"), err)
+	ok, err = pcall(fire, "CHAT_MSG_LOOT", "Kesh receives loot: [Cruel Barb].")
+	check("CHAT_MSG_LOOT recorded", ok and has("CHAT_MSG_LOOT | \"Kesh receives loot"), err)
+	cleu = { 1, "UNIT_DIED", false, nil, nil, 0, 0, "Player-1-ABC", "Mirela", 1297 }
+	ok, err = pcall(fire, "COMBAT_LOG_EVENT_UNFILTERED")
+	cleu = { 1, "SPELL_DAMAGE", false, nil, nil, 0, 0, "Player-1-ABC", "Mirela", 1297 }
+	pcall(fire, "COMBAT_LOG_EVENT_UNFILTERED")
+	check("combat log: deaths recorded, other events ignored", ok and has('CLEU | "UNIT_DIED", "Mirela", "Player"')
+		and not has("SPELL_DAMAGE"), err)
+	ns.Probe.Resume()
+	check("resume after /reload keeps recording", has("RESUME"))
+	played = {}
+	ok, err = pcall(SlashCmdList.RUNRECAP, "sounds")
+	check("/recap sounds plays every candidate", ok and #played == #P.SOUNDS, err)
+	check("... and reports missing sounds", has("SOUND | 17316 missing") and has("SOUND | 888 plays"))
+	played = {}
+	ok, err = pcall(SlashCmdList.RUNRECAP, "sound 878")
+	check("/recap sound 878 plays that ID", ok and played[1] == 878, err)
+	ok, err = pcall(SlashCmdList.RUNRECAP, "probe")
+	check("/recap probe again stops", ok and ns.db.probeActive == false and has("STOP"), err)
+	local n = #ns.db.probe
+	pcall(fire, "CHAT_MSG_LOOT", "after stop")
+	check("nothing recorded after stop", #ns.db.probe == n)
+	pcall(SlashCmdList.RUNRECAP, "probe clear")
+	check("/recap probe clear empties the log", #ns.db.probe == 0)
+end
 
 print("Fonts")
 do

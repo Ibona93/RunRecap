@@ -10,6 +10,8 @@ ns.DEFAULTS = {
 	debug = false,
 	runs = {},              -- finished runs (newest last); filled from 0.1 on
 	currentRun = nil,       -- the run in progress, saved continuously so /reload loses nothing
+	probeActive = false,    -- developer probe (/recap probe) is recording
+	probe = {},             -- developer probe log lines
 }
 
 -------------------------------------------------------------------------------
@@ -51,6 +53,7 @@ frame:SetScript("OnEvent", function(_, event, arg1)
 	if event == "ADDON_LOADED" then
 		if arg1 == ADDON_NAME then
 			ns.InitDB()
+			if ns.Probe then ns.Probe.Resume() end
 			frame:UnregisterEvent("ADDON_LOADED")
 		end
 	end
@@ -69,6 +72,7 @@ SlashCmdList.RUNRECAP = function(msg)
 	msg = (msg or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
 	local L = ns.L
 	if not ns.db then ns.InitDB() end
+	if ns.Probe and ns.Probe.Slash(msg) then return end
 	if msg == "debug" then
 		ns.db.debug = not ns.db.debug
 		ns.Print(ns.db.debug and L.DEBUG_ON or L.DEBUG_OFF)

@@ -31,9 +31,24 @@ All three must pass before a release.
 |---|---|
 | `luacheck` | all Lua files |
 | `tests/run.lua` | helpers (`MergeDefaults`, `CopyTable`, `NormalizeLocale`, `TryCall`), `RunRecapDB` creation and upgrade, every locale file has every English key with the same placeholders and no extra keys |
-| `tests/smoke.lua` | every TOC file loads and runs, every addon `.lua` file is listed in the TOC, `ADDON_LOADED`, TOC version = `ns.VERSION`, `/recap` commands, fonts incl. CJK fallback |
+| `tests/smoke.lua` | every TOC file loads and runs, every addon `.lua` file is listed in the TOC, `ADDON_LOADED`, TOC version = `ns.VERSION`, `/recap` commands, probe (recording, loot sources, combat log filter, resume, sounds, stop/clear), fonts incl. CJK fallback |
 
 New WoW globals used by the addon go into `.luacheckrc`. New features get new checks.
+
+## Probe (hidden developer commands)
+
+Finds out what the WoW Forever client really delivers before features are built on it. Only listens to events; never touches Blizzard frames.
+
+| Command | Effect |
+|---|---|
+| `/recap probe` | start/stop recording; survives `/reload` |
+| `/recap probe clear` | delete the recording |
+| `/recap sounds` | play the success sound candidates, 3 s apart, and report which exist |
+| `/recap sound <id>` | play one sound kit ID |
+
+Recorded (in `RunRecapDB.probe`, max. 3000 lines): client build, which APIs exist, the loot/roll global strings, `GetInstanceInfo` on zone changes, `ENCOUNTER_START/END`, `BOSS_KILL`, `CHAT_MSG_LOOT`, `CHAT_MSG_MONEY`, roll events, combat start/end, deaths from the combat log (`UNIT_DIED`, `PARTY_KILL`), and per loot window every slot with `GetLootSourceInfo` (NPC ID of the source). Key events are also printed to chat.
+
+The file is written on logout or `/reload`: `_forever_/WTF/Account/<ACCOUNT>/SavedVariables/RunRecap.lua`.
 
 ## In-game test checklist
 
@@ -53,6 +68,7 @@ RunRecap.toc        Interface 16001, SavedVariables RunRecapDB
 Init.lua            namespace, version, locale registry, helpers (Print, Debug, MergeDefaults …)
 Locales/*.lua       UI texts in 10 languages (enUS is the base and fallback)
 Core.lua            defaults, locale selection, saved variables, events, /recap
+Dev/Probe.lua       hidden developer probe: /recap probe, /recap sounds, /recap sound <id>
 UI/Fonts.lua        font objects: Philosopher (headings), Noto Sans (text), game font on CJK clients
 Media/Fonts/        shipped fonts + SIL OFL licenses
 tests/              offline tests (not shipped)
