@@ -1,0 +1,11 @@
+Fonts shipped with Run Recap Forever (all SIL Open Font License 1.1, see OFL-*.txt):
+
+Philosopher-Regular.ttf      Philosopher, (c) The Philosopher Project Authors.
+                             Subset to Latin/Greek/Cyrillic. Used for headings.
+NotoSans-Regular.ttf         Noto Sans, (c) The Noto Project Authors.
+                             Static Regular instance of the variable font, subset to Latin/Greek/Cyrillic.
+                             Used for body text.
+
+Korean and Chinese clients use the game font instead (these files have no CJK glyphs).
+
+Source: https://github.com/google/fonts

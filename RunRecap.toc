@@ -1,0 +1,27 @@
+## Interface: 16001
+## Title: Run Recap Forever
+## Title-deDE: Run Recap Forever
+## Notes: A summary of your dungeon run after the last boss: bosses, who got which loot, and fun facts.
+## Notes-deDE: Zusammenfassung deines Dungeon-Runs nach dem Endboss: Bosse, wer welche Beute bekommen hat, und Fakten zum Run.
+## Author: Ibona93
+## X-License: MIT
+## Version: 0.1.0
+## SavedVariables: RunRecapDB
+## Category: Dungeons
+
+Init.lua
+
+Locales\enUS.lua
+Locales\deDE.lua
+Locales\frFR.lua
+Locales\esES.lua
+Locales\ptBR.lua
+Locales\itIT.lua
+Locales\ruRU.lua
+Locales\koKR.lua
+Locales\zhCN.lua
+Locales\zhTW.lua
+
+Core.lua
+
+UI\Fonts.lua
