@@ -75,6 +75,25 @@ local played = {}
 _G.PlaySound = function(id) played[#played + 1] = id return id ~= 17316 end
 _G.C_Timer = { After = function(_, fn) fn() end }
 _G.LOOT_ITEM = "%s receives loot: %s."
+-- Adventure Guide mock: one tier, one dungeon (Ragefire Chasm) with two bosses and loot.
+local ejSelected
+_G.EJ_GetNumTiers = function() return 1 end
+_G.EJ_SelectTier = function() end
+_G.EJ_ResetLootFilter = function() end
+_G.EJ_GetInstanceByIndex = function(i, isRaid)
+	if i == 1 and not isRaid then return 226, "Ragefire Chasm", "", 0, 0, 0, 0, 213, "link", false, 389 end
+end
+_G.EJ_SelectInstance = function() end
+_G.EJ_GetEncounterInfoByIndex = function(i)
+	local list = { { "Oggleflint", 694, 2732 }, { "Taragaman", 695, 2733 } }
+	local e = list[i]
+	if e then return e[1], "", e[2], 0, "link", 226, e[3], 389 end
+end
+_G.EJ_SelectEncounter = function(jeid) ejSelected = jeid end
+_G.C_EncounterJournal = {
+	GetNumLoot = function() return ejSelected == 694 and 2 or 1 end,
+	GetLootInfoByIndex = function(i) return { itemID = (ejSelected or 0) * 10 + i } end,
+}
 
 -------------------------------------------------------------------------------
 -- Load the addon in TOC order
@@ -178,6 +197,12 @@ do
 	played = {}
 	ok, err = pcall(SlashCmdList.RUNRECAP, "sound 878")
 	check("/recap sound 878 plays that ID", ok and played[1] == 878, err)
+	ok, err = pcall(SlashCmdList.RUNRECAP, "ej")
+	local ej = ns.db.ej
+	check("/recap ej dumps instances, encounter IDs and loot", ok and ej and #ej.instances == 1
+		and ej.instances[1].mapID == 389 and ej.instances[1].encounters[2].id == 2733
+		and #ej.instances[1].encounters[1].loot == 2 and ej.instances[1].encounters[2].loot[1] == 6951, err)
+	check("... and records which APIs exist", ej and ej.apis:find("EJ_GetInstanceByIndex=yes") and ej.apis:find("C_EJ.GetNumLoot=yes"))
 	ok, err = pcall(SlashCmdList.RUNRECAP, "probe")
 	check("/recap probe again stops", ok and ns.db.probeActive == false and has("STOP"), err)
 	local n = #ns.db.probe
@@ -194,9 +219,14 @@ do
 	check("heading and text font objects are created", h and t and h ~= t)
 	check("font objects are cached", F.Heading(16) == h)
 	check("Philosopher for headings, Noto Sans for text", F.PathFor("heading"):find("Philosopher") and F.PathFor("text"):find("NotoSans"))
+	check("banner: Cinzel title, game font below", F.PathFor("banner"):find("Cinzel%-Bold") and F.PathFor("game") == "Fonts\\FRIZQT__.TTF"
+		and F.BannerTitle(32) ~= F.BannerText(15))
 	local old = ns.clientLocale
 	ns.clientLocale = "zhCN"
 	check("Chinese client uses the game font", not F.PathFor("heading"):find("Philosopher"))
+	ns.clientLocale = "ruRU"
+	check("Russian client: Philosopher (has Cyrillic), but game font for the banner title",
+		F.PathFor("heading"):find("Philosopher") and not F.PathFor("banner"):find("Cinzel"))
 	ns.clientLocale = old
 end
 

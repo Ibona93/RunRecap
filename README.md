@@ -44,4 +44,5 @@ Bug reports and ideas: [GitHub Issues](https://github.com/Ibona93/RunRecap/issue
 ## 5. Changelog
 
 ### 0.1.0 (in development)
-- Basic framework: saved variables `RunRecapDB`, `/recap` command, texts in 10 languages, fonts (Philosopher, Noto Sans), offline tests.
+- Basic framework: saved variables `RunRecapDB`, `/recap` command, texts in 10 languages, fonts (Philosopher, Noto Sans, Cinzel), offline tests.
+- Boss data for all 28 dungeons, including the 9 new Forever dungeons (wings for Scarlet Monastery, Dire Maul, Stratholme and Blackrock Spire).

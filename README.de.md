@@ -44,4 +44,5 @@ Fehler und Ideen: [GitHub Issues](https://github.com/Ibona93/RunRecap/issues). T
 ## 5. Changelog
 
 ### 0.1.0 (in Entwicklung)
-- Grundgerüst: SavedVariables `RunRecapDB`, Befehl `/recap`, Texte in 10 Sprachen, Schriften (Philosopher, Noto Sans), Offline-Tests.
+- Grundgerüst: SavedVariables `RunRecapDB`, Befehl `/recap`, Texte in 10 Sprachen, Schriften (Philosopher, Noto Sans, Cinzel), Offline-Tests.
+- Bossdaten für alle 28 Dungeons, auch die 9 neuen Forever-Dungeons (Flügel für Scharlachrotes Kloster, Düsterbruch, Stratholme und Schwarzfelsspitze).

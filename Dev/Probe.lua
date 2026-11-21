@@ -9,6 +9,7 @@ reads loot slot data while the loot window is open.
   /recap probe clear  delete the recording
   /recap sounds       play the success sound candidates one after another (3 s apart)
   /recap sound <id>   play one sound kit ID
+  /recap ej           dump the Adventure Guide (dungeons, bosses, encounter IDs, loot) to RunRecapDB.ej
 
 Messages are English on purpose (developer output, like BGF's "/bgf check").
 ]]
@@ -206,6 +207,75 @@ function Probe.PlayAll()
 	step(1)
 end
 
+-- Adventure Guide dump: verifies Data/Dungeons.lua and may replace hand-made loot tables.
+-- Uses only the EJ_* / C_EncounterJournal query functions; every call is protected.
+local function try(fn, ...)
+	if type(fn) ~= "function" then return nil end
+	local r = { pcall(fn, ...) }
+	if r[1] then return select(2, unpack(r)) end
+end
+
+function Probe.DumpEncounterJournal()
+	local CEJ = _G.C_EncounterJournal
+	local apis = {}
+	for _, name in ipairs({ "EJ_GetNumTiers", "EJ_SelectTier", "EJ_GetInstanceByIndex", "EJ_GetEncounterInfoByIndex",
+		"EJ_SelectInstance", "EJ_SelectEncounter", "EJ_SetDifficulty", "EJ_ResetLootFilter", "EJ_GetNumLoot",
+		"EJ_GetLootInfoByIndex" }) do
+		apis[#apis + 1] = name .. "=" .. (_G[name] and "yes" or "NO")
+	end
+	apis[#apis + 1] = "C_EncounterJournal=" .. (CEJ and "yes" or "NO")
+	if CEJ then
+		apis[#apis + 1] = "C_EJ.GetNumLoot=" .. (CEJ.GetNumLoot and "yes" or "NO")
+		apis[#apis + 1] = "C_EJ.GetLootInfoByIndex=" .. (CEJ.GetLootInfoByIndex and "yes" or "NO")
+	end
+	local dump = { apis = table.concat(apis, " "), instances = {} }
+	ns.db.ej = dump
+	local numTiers = try(_G.EJ_GetNumTiers) or 1
+	try(_G.EJ_ResetLootFilter)
+	local seen, bosses, items = {}, 0, 0
+	for tier = 1, numTiers do
+		try(_G.EJ_SelectTier, tier)
+		for _, isRaid in ipairs({ false, true }) do
+			for i = 1, 200 do
+				local jid, name, _, _, _, _, _, _, _, _, mapID = try(_G.EJ_GetInstanceByIndex, i, isRaid)
+				if not jid then break end
+				if not seen[jid] then
+					seen[jid] = true
+					local inst = { jid = jid, name = name, mapID = mapID, raid = isRaid, tier = tier, encounters = {} }
+					dump.instances[#dump.instances + 1] = inst
+					try(_G.EJ_SelectInstance, jid)
+					for e = 1, 60 do
+						local eName, _, jeid, _, _, _, dungeonEncounterID, eMapID = try(_G.EJ_GetEncounterInfoByIndex, e, jid)
+						if not eName then break end
+						bosses = bosses + 1
+						local enc = { name = eName, jeid = jeid, id = dungeonEncounterID, mapID = eMapID, loot = {} }
+						inst.encounters[#inst.encounters + 1] = enc
+						try(_G.EJ_SelectEncounter, jeid)
+						local n = (CEJ and try(CEJ.GetNumLoot)) or try(_G.EJ_GetNumLoot) or 0
+						for l = 1, n do
+							local itemID
+							if CEJ and CEJ.GetLootInfoByIndex then
+								local info = try(CEJ.GetLootInfoByIndex, l)
+								itemID = type(info) == "table" and info.itemID or nil
+							else
+								itemID = select(5, try(_G.EJ_GetLootInfoByIndex, l))
+							end
+							if itemID then
+								enc.loot[#enc.loot + 1] = itemID
+								items = items + 1
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	Probe.Add("EJ", ("%s | %d instances, %d bosses, %d loot items"):format(dump.apis, #dump.instances, bosses, items))
+	ns.Print(("Adventure Guide: %d instances, %d bosses, %d loot items. /reload to write the file."):format(
+		#dump.instances, bosses, items))
+	return dump
+end
+
 -- Slash sub-commands; returns true when handled.
 function Probe.Slash(msg)
 	if msg == "probe" then
@@ -214,6 +284,9 @@ function Probe.Slash(msg)
 	elseif msg == "probe clear" then
 		ns.db.probe = {}
 		ns.Print("probe log cleared")
+		return true
+	elseif msg == "ej" then
+		Probe.DumpEncounterJournal()
 		return true
 	elseif msg == "sounds" then
 		Probe.PlayAll()

@@ -5,7 +5,12 @@ Philosopher-Regular.ttf      Philosopher, (c) The Philosopher Project Authors.
 NotoSans-Regular.ttf         Noto Sans, (c) The Noto Project Authors.
                              Static Regular instance of the variable font, subset to Latin/Greek/Cyrillic.
                              Used for body text.
+Cinzel-Bold.ttf              Cinzel, (c) The Cinzel Project Authors.
+                             Static Bold (wght 700) instance of the variable font, subset to Latin incl. Latin-1
+                             and Latin Extended-A. Used for the title of the success banner.
 
 Korean and Chinese clients use the game font instead (these files have no CJK glyphs).
+Cinzel has no Cyrillic: Russian clients use the game font for the banner title.
+The banner's smaller lines use the game's own font (Friz Quadrata), which is not shipped.
 
 Source: https://github.com/google/fonts

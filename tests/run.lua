@@ -21,6 +21,8 @@ _G.SlashCmdList = {}
 
 load("Init.lua")
 for _, lang in ipairs(ns.LANGUAGES) do load("Locales/" .. lang .. ".lua") end
+load("Data/Dungeons.lua")
+load("Logic/Dungeons.lua")
 load("Core.lua")
 
 local passed, failed = 0, 0
@@ -86,6 +88,65 @@ do
 		for key in pairs(own or {}) do if base[key] == nil then extra[#extra + 1] = key end end
 		check(lang .. " has no keys English lacks", #extra == 0, table.concat(extra, ", "))
 	end
+end
+
+print("Dungeon data")
+do
+	local D = ns.Dungeons
+	local seenEnc, dupes, seenKey, badKey, count, noFinish = {}, {}, {}, {}, 0, {}
+	for mapID, dungeon in pairs(ns.DUNGEONS) do
+		count = count + 1
+		for _, wing in ipairs(dungeon.wings) do
+			local hasFinal, required = false, 0
+			for _, boss in ipairs(wing.bosses) do
+				if boss.final then hasFinal = true end
+				if not boss.opt then required = required + 1 end
+				local k = mapID .. "/" .. boss.key
+				if seenKey[k] then badKey[#badKey + 1] = k end
+				seenKey[k] = true
+				for _, id in ipairs(boss.ids) do
+					if seenEnc[id] then dupes[#dupes + 1] = id .. " (" .. seenEnc[id] .. " / " .. boss.key .. ")" end
+					seenEnc[id] = boss.key
+				end
+			end
+			if not hasFinal and required == 0 then noFinish[#noFinish + 1] = mapID .. "/" .. wing.key end
+		end
+	end
+	check("28 dungeons in the table", count == 28, tostring(count))
+	check("every encounter ID belongs to exactly one boss", #dupes == 0, table.concat(dupes, ", "))
+	check("boss keys are unique per dungeon", #badKey == 0, table.concat(badKey, ", "))
+	check("every wing can be completed", #noFinish == 0, table.concat(noFinish, ", "))
+
+	local mapID, dungeon, wing, boss = D.FindEncounter(2732)
+	check("encounter 2732 = Ragefire Chasm / Oggleflint (probe run)", mapID == 389 and boss.key == "Oggleflint" and wing.key == "main")
+	check("NPC 11520 = Taragaman (GetLootSourceInfo in the probe run)", select(4, D.FindNpc(11520)).key == "Taragaman")
+	check("unknown encounter and NPC give nil", D.FindEncounter(1) == nil and D.FindNpc(nil) == nil)
+	check("Deadmines Forever ID 2747 and old ID 2972 both = VanCleef",
+		select(4, D.FindEncounter(2747)).key == "VanCleef" and select(4, D.FindEncounter(2972)).key == "VanCleef")
+
+	-- Replay of the probe run: Oggleflint, Taragaman, Bazzalan, Jergosh (wipe, then kill).
+	local killed, results = {}, {}
+	for _, id in ipairs({ 2732, 2733, 2735, 2734 }) do
+		local _, _, w, b = D.FindEncounter(id)
+		killed[b.key] = true
+		local complete, done, total = D.WingProgress(w, killed)
+		results[#results + 1] = (complete and "done" or "open") .. " " .. done .. "/" .. total
+	end
+	check("Ragefire: complete only after all 4 bosses, any order", table.concat(results, ", ")
+		== "open 1/4, open 2/4, open 3/4, done 4/4", table.concat(results, ", "))
+
+	local _, _, dm = D.FindEncounter(2747)
+	local c1, d1, t1 = D.WingProgress(dm, { RhahkZor = true, VanCleef = true })
+	local c2 = D.WingProgress(dm, { RhahkZor = true, Sneed = true, Gilnid = true, MrSmite = true, Greenskin = true, Cookie = true })
+	check("Deadmines: VanCleef completes it; optional Miner Johnson/Cookie not counted", c1 and d1 == 2 and t1 == 6 and not c2,
+		tostring(d1) .. "/" .. tostring(t1))
+	local _, smDungeon, smWing = D.FindEncounter(447)
+	check("Scarlet Monastery: Doan completes the Library wing only", smWing.key == "library"
+		and D.WingProgress(smWing, { Doan = true }) and #smDungeon.wings == 4)
+	local _, _, stocks = D.FindEncounter(2760)
+	check("Stockade (no fixed end boss): 4 of 5 is not complete", not D.WingProgress(stocks,
+		{ Targorr = true, KamDeepfury = true, Hamhock = true, BazilThredd = true }))
+	check("Forever dungeons are marked unverified", ns.DUNGEONS[3065].verified == false and ns.DUNGEONS[389].verified == nil)
 end
 
 print(("\n%d passed, %d failed"):format(passed, failed))

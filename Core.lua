@@ -12,6 +12,7 @@ ns.DEFAULTS = {
 	currentRun = nil,       -- the run in progress, saved continuously so /reload loses nothing
 	probeActive = false,    -- developer probe (/recap probe) is recording
 	probe = {},             -- developer probe log lines
+	ej = nil,               -- developer dump of the Adventure Guide (/recap ej)
 }
 
 -------------------------------------------------------------------------------
