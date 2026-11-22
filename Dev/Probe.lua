@@ -228,9 +228,20 @@ function Probe.DumpEncounterJournal()
 		apis[#apis + 1] = "C_EJ.GetNumLoot=" .. (CEJ.GetNumLoot and "yes" or "NO")
 		apis[#apis + 1] = "C_EJ.GetLootInfoByIndex=" .. (CEJ.GetLootInfoByIndex and "yes" or "NO")
 	end
+	-- The journal data only exists once Blizzard's Adventure Guide is loaded (normally on first open).
+	local loadedBefore = _G.EncounterJournal ~= nil
+	if not loadedBefore then
+		local CAddOns = _G.C_AddOns
+		if _G.EncounterJournal_LoadUI then try(_G.EncounterJournal_LoadUI)
+		elseif CAddOns and CAddOns.LoadAddOn then try(CAddOns.LoadAddOn, "Blizzard_EncounterJournal")
+		elseif _G.LoadAddOn then try(_G.LoadAddOn, "Blizzard_EncounterJournal") end
+	end
+	local numTiers = try(_G.EJ_GetNumTiers)
+	apis[#apis + 1] = ("journal loaded before=%s after=%s, tiers=%s"):format(tostring(loadedBefore),
+		tostring(_G.EncounterJournal ~= nil), tostring(numTiers))
 	local dump = { apis = table.concat(apis, " "), instances = {} }
 	ns.db.ej = dump
-	local numTiers = try(_G.EJ_GetNumTiers) or 1
+	if not numTiers or numTiers < 1 then numTiers = 1 end
 	try(_G.EJ_ResetLootFilter)
 	local seen, bosses, items = {}, 0, 0
 	for tier = 1, numTiers do

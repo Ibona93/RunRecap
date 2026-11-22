@@ -77,11 +77,13 @@ _G.C_Timer = { After = function(_, fn) fn() end }
 _G.LOOT_ITEM = "%s receives loot: %s."
 -- Adventure Guide mock: one tier, one dungeon (Ragefire Chasm) with two bosses and loot.
 local ejSelected
-_G.EJ_GetNumTiers = function() return 1 end
+-- Like the real client: no tiers and no instances until the Adventure Guide is loaded.
+_G.EJ_GetNumTiers = function() return _G.EncounterJournal and 1 or 0 end
+_G.EncounterJournal_LoadUI = function() _G.EncounterJournal = {} end
 _G.EJ_SelectTier = function() end
 _G.EJ_ResetLootFilter = function() end
 _G.EJ_GetInstanceByIndex = function(i, isRaid)
-	if i == 1 and not isRaid then return 226, "Ragefire Chasm", "", 0, 0, 0, 0, 213, "link", false, 389 end
+	if i == 1 and not isRaid and _G.EncounterJournal then return 226, "Ragefire Chasm", "", 0, 0, 0, 0, 213, "link", false, 389 end
 end
 _G.EJ_SelectInstance = function() end
 _G.EJ_GetEncounterInfoByIndex = function(i)
@@ -202,6 +204,7 @@ do
 	check("/recap ej dumps instances, encounter IDs and loot", ok and ej and #ej.instances == 1
 		and ej.instances[1].mapID == 389 and ej.instances[1].encounters[2].id == 2733
 		and #ej.instances[1].encounters[1].loot == 2 and ej.instances[1].encounters[2].loot[1] == 6951, err)
+	check("... after loading the Adventure Guide first", ej and ej.apis:find("loaded before=false after=true, tiers=1"))
 	check("... and records which APIs exist", ej and ej.apis:find("EJ_GetInstanceByIndex=yes") and ej.apis:find("C_EJ.GetNumLoot=yes"))
 	ok, err = pcall(SlashCmdList.RUNRECAP, "probe")
 	check("/recap probe again stops", ok and ns.db.probeActive == false and has("STOP"), err)
