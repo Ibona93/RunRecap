@@ -41,6 +41,8 @@ Schwester-Addon: [BGF – Better Group Finder Forever](https://github.com/Ibona9
 | `/recap` | Übersicht des letzten geschafften Runs öffnen/schließen |
 | `/recap options` | Optionen öffnen (auch unter Optionen → AddOns) |
 | `/recap demo` | Vorschau: Sound, Banner und Übersicht mit einem ausgedachten Run |
+| `/recap tour` | Einführung neu starten |
+| `/recap news` | „Neu in Run Recap“ zeigen (alle Release-Notes über das Versions-Etikett) |
 | `/recap debug` | Debug-Ausgabe an/aus, zeigt Version, Client-Build, Interface-Nummer und den laufenden Run |
 | `/recap help` | Befehle auflisten |
 
@@ -62,5 +64,6 @@ Fehler und Ideen: [GitHub Issues](https://github.com/Ibona93/RunRecap/issues). T
 - Erste Version: Übersicht nach dem Endboss mit Bossen (Minute im Run, Kampfdauer, Endboss), Beute pro Boss mit Plünderer in Klassenfarbe, Abschnitt „Trash“ und Fakten zum Run (Dauer, Bosse, Wipes, dein Gold, Händlerwert deiner Beute, Reparaturkosten und Bilanz, Tode, Highlights).
 - Erfolgsmoment: Sound und Banner „Dungeon erfolgreich beendet!“, danach die Übersicht.
 - Würfe: wer gewonnen hat und mit Umschalt alle Würfe.
+- Einführung beim ersten Start, „Neu in Run Recap“ nach jedem Update (Deutsch/Englisch).
 - Alle 28 Dungeons, auch die 9 neuen Forever-Dungeons (Flügel für Scharlachrotes Kloster, Düsterbruch, Stratholme und Schwarzfelsspitze).
 - Zwei Darstellungen: Blizzard (Standard) oder Run Recap (dunkel & gold); Optionen: automatisch öffnen, grüne Items, Darstellung, Erfolgssound, Vorschau. Texte in 10 Sprachen.

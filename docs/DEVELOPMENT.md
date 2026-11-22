@@ -116,6 +116,10 @@ UI/Banner.lua       success sound + banner, then the recap (after combat)
 UI/Recap.lua        recap window, one per skin (bosses & loot, run facts, highlights box) with tooltips
 UI/Options.lua      options page (Settings → AddOns, fallback window)
 UI/Demo.lua         preview with a made-up run (/recap demo)
+UI/Tour.lua         introduction tour, once at login (RunRecapDB.tourSeen), /recap tour
+UI/WhatsNew.lua     "What's new" once per version at login, version badge lists all releases, /recap news
+Data/News.lua       release notes per version (deDE/enUS) - add a page for every CurseForge release
+Data/Tour.lua       tour pages (deDE/enUS)
 Media/Fonts/        shipped fonts + SIL OFL licenses
 Media/Banner*.tga   banner band, gold line, glow (made by tools/make_banner_textures.py)
 tests/              offline tests (not shipped)

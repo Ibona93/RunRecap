@@ -41,6 +41,8 @@ Sister addon: [BGF – Better Group Finder Forever](https://github.com/Ibona93/B
 | `/recap` | Open/close the recap of the last completed run |
 | `/recap options` | Open the options (also under Options → AddOns) |
 | `/recap demo` | Preview: sound, banner and recap with a made-up run |
+| `/recap tour` | Restart the introduction |
+| `/recap news` | Show "What's new" (all release notes via the version badge) |
 | `/recap debug` | Debug output on/off, shows version, client build, interface number and the current run |
 | `/recap help` | List the commands |
 
@@ -62,5 +64,6 @@ Bug reports and ideas: [GitHub Issues](https://github.com/Ibona93/RunRecap/issue
 - First version: recap after the last boss with bosses (minute in the run, fight duration, end boss), loot per boss with the looter in class colour, a "Trash" section and run facts (duration, bosses, wipes, your gold, vendor value of your loot, repair costs and balance, deaths, highlights).
 - Success moment: sound and "Dungeon completed!" banner, then the recap.
 - Rolls: who won, and with Shift every roll.
+- Introduction on the first start, "What's new" after every update (German/English).
 - All 28 dungeons, including the 9 new Forever dungeons (wings for Scarlet Monastery, Dire Maul, Stratholme and Blackrock Spire).
 - Two looks: Blizzard (default) or Run Recap (dark & gold); options: open automatically, green items, look, success sound, preview. Texts in 10 languages.

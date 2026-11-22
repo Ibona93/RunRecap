@@ -414,7 +414,7 @@ do
 	check("facts: every player without a death in its own row", lines:find("Bram|r|0", 1, true) ~= nil and lines:find("Lyss|r|0", 1, true) ~= nil
 		and lines:find("Thorgar|r|0", 1, true) ~= nil, lines)
 	check("facts: gold, vendor value, repairs, balance", lines:find("Händlerwert|+ 2", 1, true) ~= nil
-		and lines:find("Reparatur|− 1", 1, true) ~= nil and lines:find("Bilanz|5", 1, true) ~= nil, lines)
+		and lines:find("Reparatur|– 1", 1, true) ~= nil and lines:find("Bilanz|5", 1, true) ~= nil, lines)
 	check("facts box sized to its content", (rawget(f2.Facts, "__h") or 0) > 100 and (rawget(f2.Facts, "__h") or 999) < 300)
 	local panel = ns.Options.Panel()
 	ok, err = pcall(panel.SkinDrop.__scripts.OnClick, panel.SkinDrop)
@@ -432,6 +432,53 @@ do
 	check("options: sound and skin names", ns.Options.SkinName("recap") == ns.L.SKIN_RECAP and ns.Options.SkinName("blizzard") == ns.L.SKIN_BLIZZARD)
 	check("options: sound names", ns.Options.SoundName(878) == "Quest abgeschlossen" and ns.Options.SoundName(0) == "Aus")
 	check("every event handler registered", #ns.EVENTS >= 20)
+end
+
+
+print("Introduction and what's new")
+do
+	local tour = _G.RunRecapTour
+	check("first login: the introduction was shown once, news marked as seen", tour ~= nil and ns.db.tourSeen == true
+		and ns.db.lastSeenVersion == ns.VERSION)
+	local logBefore = #ns.debugLog
+	for i = 1, #ns.TourPages() do
+		ok, err = pcall(ns.Tour.Go, i)
+		check("tour page " .. i .. " (" .. ns.TourPages()[i].ill .. ") builds", ok, err)
+	end
+	local pictureErrors = 0
+	for i = logBefore + 1, #ns.debugLog do if tostring(ns.debugLog[i]):find("tour picture") then pictureErrors = pictureErrors + 1 end end
+	check("no picture failed to draw", pictureErrors == 0, tostring(ns.debugLog[#ns.debugLog]))
+	check("tour: 5 pages, none about the banner", #ns.TourPages() == 5 and (function()
+		for _, p in ipairs(ns.TourPages()) do if p.ill == "banner" then return false end end
+		return true
+	end)())
+	check("tour: German texts on a German client", ns.TourPages()[1].title == "Läuft von allein")
+	pcall(ns.Tour.Go, 6)
+	check("'Done' on the last page closes the tour", not tour:IsShown())
+
+	-- login after an update: "What's new" once
+	ns.db.lastSeenVersion = "0.0.9"
+	ok, err = pcall(fire, "PLAYER_ENTERING_WORLD", false, true)
+	local news = _G.RunRecapWhatsNew
+	check("after an update the news window opens once", ok and news and news:IsShown() and ns.db.lastSeenVersion == ns.VERSION, err)
+	check("news: page of the newest version (welcome page 1.0.0)", ns.WhatsNew.Frame().version == "1.0.0"
+		and news.Title.__text == "Willkommen bei Run Recap")
+	news:Hide()
+	pcall(fire, "PLAYER_ENTERING_WORLD", false, true)
+	check("not again at the next /reload", not news:IsShown())
+	ns.db.lastSeenVersion = "0.0.9"
+	ns.db.showWhatsNew = false
+	pcall(fire, "PLAYER_ENTERING_WORLD", false, true)
+	check("switched off: not shown, but marked as seen", not news:IsShown() and ns.db.lastSeenVersion == ns.VERSION)
+	ns.db.showWhatsNew = true
+	ok, err = pcall(ns.WhatsNew.OpenVersionMenu, news.Badge, "1.0.0")
+	check("version badge opens the release list", ok, err)
+	pcall(SlashCmdList.RUNRECAP, "news")
+	check("/recap news opens it", news:IsShown())
+	pcall(SlashCmdList.RUNRECAP, "tour")
+	check("/recap tour restarts the introduction", tour:IsShown() and ns.Tour.Frame().page == 1)
+	local panel = ns.Options.Panel()
+	check("options: buttons for introduction and news, checkbox", panel.Tour and panel.News and panel.NewsCheck)
 end
 
 print(failures == 0 and "\nall smoke checks passed" or ("\n" .. failures .. " smoke checks failed"))

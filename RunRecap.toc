@@ -23,6 +23,8 @@ Locales\zhCN.lua
 Locales\zhTW.lua
 
 Data\Dungeons.lua
+Data\News.lua
+Data\Tour.lua
 Logic\Dungeons.lua
 Logic\Parse.lua
 Logic\Run.lua
@@ -37,3 +39,5 @@ UI\Banner.lua
 UI\Recap.lua
 UI\Options.lua
 UI\Demo.lua
+UI\WhatsNew.lua
+UI\Tour.lua

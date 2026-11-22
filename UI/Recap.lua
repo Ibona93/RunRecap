@@ -358,8 +358,8 @@ local function renderFacts(run, s)
 	separator(box.Separator)
 	row(l.FACT_GOLD, "+ " .. coins(s.money), nil, { gap = 4 })
 	row(l.FACT_VENDOR, "+ " .. coins(s.vendor), nil, { gap = 4 })
-	row(l.FACT_REPAIR, (s.repair > 0 and "− " or "") .. coins(s.repair), nil, { gap = 4 })
-	row(l.FACT_BALANCE, (s.balance < 0 and "− " or "") .. coins(math.abs(s.balance)),
+	row(l.FACT_REPAIR, (s.repair > 0 and "– " or "") .. coins(s.repair), nil, { gap = 4 })
+	row(l.FACT_BALANCE, (s.balance < 0 and "– " or "") .. coins(math.abs(s.balance)),
 		s.balance > 0 and W.GREEN or s.balance < 0 and W.RED or { 1, 1, 1 }, { gap = 4 })
 
 	-- deaths

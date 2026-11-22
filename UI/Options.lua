@@ -113,8 +113,21 @@ local function build()
 	previewHint:SetPoint("LEFT", preview, "RIGHT", 12, 0)
 	previewHint:SetText(L.OPT_PREVIEW_HINT)
 
+	local tourButton = W.Button(panel, L.OPT_TOUR)
+	tourButton:SetPoint("LEFT", previewHint, "RIGHT", 16, 0)
+	tourButton:ClearAllPoints()
+	tourButton:SetPoint("TOPLEFT", preview, "BOTTOMLEFT", 0, -14)
+	tourButton:SetScript("OnClick", function() if ns.Tour then ns.Tour.Show() end end)
+	local newsButton = W.Button(panel, L.OPT_NEWS)
+	newsButton:SetPoint("LEFT", tourButton, "RIGHT", 8, 0)
+	newsButton:SetScript("OnClick", function() if ns.WhatsNew then ns.WhatsNew.ShowPage(ns.VERSION) end end)
+	local newsCheck = W.Check(panel, L.OPT_NEWS_SHOW, function() return ns.db.showWhatsNew ~= false end,
+		function(v) ns.db.showWhatsNew = v end)
+	newsCheck:SetPoint("LEFT", newsButton, "RIGHT", 12, 0)
+	panel.Tour, panel.News, panel.NewsCheck = tourButton, newsButton, newsCheck
+
 	local slash = W.Text(panel, ns.Fonts.Game(11), W.GREY)
-	slash:SetPoint("TOPLEFT", preview, "BOTTOMLEFT", 0, -30)
+	slash:SetPoint("TOPLEFT", tourButton, "BOTTOMLEFT", 0, -24)
 	slash:SetWidth(600)
 	slash:SetText(L.SLASH_HELP)
 

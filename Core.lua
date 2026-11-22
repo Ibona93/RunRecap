@@ -13,6 +13,8 @@ ns.DEFAULTS = {
 	sound = 878,            -- success sound kit ID ("Quest complete"), 0 = off
 	showGreen = false,      -- list green items (otherwise counted as hidden)
 	skin = "blizzard",      -- recap window look: "blizzard" (native) or "recap" (dark & gold)
+	tourSeen = false,       -- introduction tour shown once at login (instead of "What's new")
+	showWhatsNew = true,    -- "What's new" window after updates (lastSeenVersion: last shown)
 	runs = {},              -- finished, completed runs (newest last, max. 20)
 	currentRun = nil,       -- the run in progress, saved continuously so /reload loses nothing
 	learned = {},           -- [itemID] = "mapID:bossKey", learned from sure loot sources
@@ -352,6 +354,10 @@ SlashCmdList.RUNRECAP = function(msg)
 		if ns.Options then ns.Options.Open() end
 	elseif msg == "demo" then
 		if ns.Demo then ns.Demo.Show() end
+	elseif msg == "tour" then
+		if ns.Tour then ns.Tour.Show() end
+	elseif msg == "news" then
+		if ns.WhatsNew then ns.WhatsNew.ShowPage(ns.VERSION) end
 	elseif msg == "" then
 		local run = ns.Run.Latest()
 		if run and ns.Recap then

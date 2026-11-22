@@ -1,0 +1,313 @@
+local _, ns = ...
+
+--[[
+"What's new" window (as in BGF): shown once per new version right at login (after combat if
+you log in fighting). New users get the introduction tour instead (UI/Tour.lua). The version
+badge opens a list of all releases, so older release notes stay reachable. Can be switched off
+in the window and in the options. Texts: Data/News.lua (German for German clients, English
+otherwise). Look as in BGF: dark brown, golden border, game fonts - whatever the recap skin.
+]]
+
+local News = {}
+ns.WhatsNew = News
+
+local WIDTH, PAD, ICON_SIZE = 560, 22, 40
+local frame
+local itemFrames = {}
+
+local function ui() return ns.NEWS_UI[ns.NewsLang()] end
+
+local function fontString(parent, template, r, g, b)
+	local fs = parent:CreateFontString(nil, "ARTWORK", template)
+	fs:SetJustifyH("LEFT")
+	if r then fs:SetTextColor(r, g, b) end
+	return fs
+end
+
+local function line(parent)
+	local t = parent:CreateTexture(nil, "ARTWORK")
+	t:SetColorTexture(0.55, 0.44, 0.24, 0.6)
+	t:SetHeight(1)
+	return t
+end
+
+-- One news entry (icon, title, text, tip).
+function News.NewItem(parent, width)
+	local textX = PAD + ICON_SIZE + 16
+	local it = CreateFrame("Frame", nil, parent)
+	it.width = width
+	it.IconBorder = it:CreateTexture(nil, "BORDER")
+	it.IconBorder:SetColorTexture(0.6, 0.48, 0.25, 1)
+	it.IconBorder:SetSize(ICON_SIZE + 4, ICON_SIZE + 4)
+	it.IconBorder:SetPoint("TOPLEFT", PAD - 2, 2)
+	it.Icon = it:CreateTexture(nil, "ARTWORK")
+	it.Icon:SetSize(ICON_SIZE, ICON_SIZE)
+	it.Icon:SetPoint("TOPLEFT", PAD, 0)
+	it.Title = fontString(it, "GameFontNormalLarge", 1, 0.82, 0)
+	it.Title:SetPoint("TOPLEFT", textX, 0)
+	it.Text = fontString(it, "GameFontHighlight", 0.92, 0.9, 0.86)
+	it.Text:SetWidth(width - textX - PAD)
+	it.Text:SetWordWrap(true)
+	it.Tip = fontString(it, "GameFontHighlightSmall", 0.47, 0.82, 0.47)
+	it.Tip:SetWidth(width - textX - PAD)
+	it.Sep = line(it)
+	return it
+end
+
+-- Fills an entry; returns its height.
+function News.FillItem(it, item, isLast)
+	local textX = PAD + ICON_SIZE + 16
+	it.Icon:SetTexture(item.icon)
+	it.Title:SetText(item.title)
+	it.Text:ClearAllPoints()
+	it.Text:SetPoint("TOPLEFT", it.Title, "BOTTOMLEFT", 0, -6)
+	it.Text:SetText(item.text)
+	local h = (it.Title:GetStringHeight() or 16) + 6 + (it.Text:GetStringHeight() or 14)
+	if item.tip then
+		it.Tip:ClearAllPoints()
+		it.Tip:SetPoint("TOPLEFT", it.Text, "BOTTOMLEFT", 0, -5)
+		it.Tip:SetText("› " .. item.tip)
+		it.Tip:Show()
+		h = h + 5 + (it.Tip:GetStringHeight() or 12)
+	else
+		it.Tip:Hide()
+	end
+	h = math.max(h, ICON_SIZE)
+	it:SetHeight(h)
+	it.Sep:ClearAllPoints()
+	it.Sep:SetPoint("TOPLEFT", textX, -(h + 12))
+	it.Sep:SetPoint("TOPRIGHT", -PAD, -(h + 12))
+	it.Sep:SetShown(not isLast)
+	it:Show()
+	return h
+end
+
+-- Version badge: "v1.0.0" with an arrow, opens the release list.
+function News.NewBadge(parent, onPick)
+	local badge = CreateFrame("Button", nil, parent, "BackdropTemplate")
+	badge:SetSize(96, 24)
+	if badge.SetBackdrop then
+		badge:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
+		badge:SetBackdropColor(0.12, 0.09, 0.03, 0.9)
+		badge:SetBackdropBorderColor(1, 0.82, 0, 1)
+	end
+	badge.Text = fontString(badge, "GameFontNormal", 1, 0.82, 0)
+	badge.Text:SetPoint("CENTER", -6, 0)
+	badge.Arrow = badge:CreateTexture(nil, "ARTWORK")
+	badge.Arrow:SetTexture("Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-Up")
+	badge.Arrow:SetSize(18, 18)
+	badge.Arrow:SetPoint("LEFT", badge.Text, "RIGHT", 0, -1)
+	badge:SetScript("OnEnter", function(self)
+		if self.SetBackdropColor then self:SetBackdropColor(0.25, 0.19, 0.05, 0.95) end
+	end)
+	badge:SetScript("OnLeave", function(self)
+		if self.SetBackdropColor then self:SetBackdropColor(0.12, 0.09, 0.03, 0.9) end
+	end)
+	badge.SetVersion = function(self, version)
+		self.version = version
+		self.Text:SetText("v" .. version)
+		self:SetWidth(math.ceil(self.Text:GetStringWidth() or 40) + 40)
+	end
+	badge:SetScript("OnClick", function(self) News.OpenVersionMenu(self, self.version, onPick) end)
+	return badge
+end
+
+local function getItem(i)
+	local it = itemFrames[i]
+	if it then return it end
+	it = News.NewItem(frame, WIDTH)
+	itemFrames[i] = it
+	return it
+end
+
+local function create()
+	frame = CreateFrame("Frame", "RunRecapWhatsNew", UIParent, "BackdropTemplate")
+	frame:SetWidth(WIDTH)
+	frame:SetPoint("CENTER", 0, 60)
+	frame:SetFrameStrata("DIALOG")
+	frame:SetClampedToScreen(true)
+	frame:EnableMouse(true)
+	frame:SetMovable(true)
+	frame:RegisterForDrag("LeftButton")
+	frame:SetScript("OnDragStart", frame.StartMoving)
+	frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+	if frame.SetBackdrop then
+		frame:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 2 })
+		frame:SetBackdropColor(0.05, 0.043, 0.035, 0.97)
+		frame:SetBackdropBorderColor(0.6, 0.48, 0.25, 1)
+	end
+	-- warm glow at the top
+	frame.Glow = frame:CreateTexture(nil, "BACKGROUND", nil, 1)
+	frame.Glow:SetPoint("TOPLEFT", 2, -2)
+	frame.Glow:SetPoint("TOPRIGHT", -2, -2)
+	frame.Glow:SetHeight(110)
+	frame.Glow:SetColorTexture(0.22, 0.16, 0.06, 0.45)
+	if frame.Glow.SetGradient and CreateColor then
+		pcall(frame.Glow.SetGradient, frame.Glow, "VERTICAL", CreateColor(0.05, 0.04, 0.03, 0), CreateColor(0.25, 0.18, 0.07, 0.6))
+	end
+
+	-- logo: the chest (no own logo yet), with a golden frame
+	frame.LogoBorder = frame:CreateTexture(nil, "BORDER")
+	frame.LogoBorder:SetColorTexture(0.6, 0.48, 0.25, 1)
+	frame.LogoBorder:SetSize(64, 64)
+	frame.LogoBorder:SetPoint("TOPLEFT", PAD, -18)
+	frame.Logo = frame:CreateTexture(nil, "ARTWORK")
+	frame.Logo:SetTexture(ns.NEWS_ICON.chest)
+	frame.Logo:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+	frame.Logo:SetSize(60, 60)
+	frame.Logo:SetPoint("CENTER", frame.LogoBorder, "CENTER")
+	frame.Title = fontString(frame, "GameFontNormalHuge", 1, 0.82, 0)
+	frame.Title:SetPoint("TOPLEFT", frame.LogoBorder, "TOPRIGHT", 14, -6)
+	frame.Subtitle = fontString(frame, "GameFontDisable")
+	frame.Subtitle:SetPoint("TOPLEFT", frame.Title, "BOTTOMLEFT", 1, -6)
+
+	-- version badge: click opens the list of releases
+	frame.Badge = News.NewBadge(frame, function(v) News.ShowPage(v) end)
+	frame.Badge:SetPoint("TOPRIGHT", -44, -26)
+
+	frame.TopLine = line(frame)
+	frame.TopLine:SetPoint("TOPLEFT", PAD, -98)
+	frame.TopLine:SetPoint("TOPRIGHT", -PAD, -98)
+
+	local close = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
+	close:SetPoint("TOPRIGHT", -2, -2)
+
+	-- footer
+	frame.BottomLine = line(frame)
+	frame.Check = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
+	frame.Check:SetSize(24, 24)
+	frame.Check:SetScript("OnClick", function(self)
+		ns.db.showWhatsNew = self:GetChecked() and true or false
+	end)
+	frame.CheckText = fontString(frame, "GameFontHighlight")
+	frame.CheckText:SetPoint("TOPLEFT", frame.Check, "TOPRIGHT", 4, -3)
+	frame.CheckHint = fontString(frame, "GameFontDisableSmall")
+	frame.CheckHint:SetPoint("TOPLEFT", frame.CheckText, "BOTTOMLEFT", 0, -2)
+
+	frame.Ok = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+	frame.Ok:SetSize(130, 26)
+	frame.Ok:SetScript("OnClick", function() frame:Hide() end)
+	frame.OptionsButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+	frame.OptionsButton:SetSize(130, 26)
+	frame.OptionsButton:SetScript("OnClick", function()
+		if InCombatLockdown and InCombatLockdown() then
+			ns.Print(ns.TourUI().combat)
+			return
+		end
+		frame:Hide()
+		if ns.Options and ns.Options.Open then ns.Options.Open() end
+	end)
+
+	frame:SetScript("OnHide", function() if ns.Popup then ns.Popup.Close() end end)
+	ns.Widgets.CloseOnEscape(frame)
+	frame:Hide()
+end
+
+-- Fills the window with the page of one version (the newest if it has none).
+function News.ShowPage(version)
+	if not frame then create() end
+	if not ns.NEWS[version] then version = ns.NEWS_ORDER[1] end
+	local page = ns.NEWS[version]
+	local texts = page[ns.NewsLang()] or page.enUS
+	local u = ui()
+	frame.version = version
+	frame.Title:SetText(texts.title)
+	frame.Subtitle:SetText(u.subtitle)
+	frame.Badge:SetVersion(version)
+	frame.CheckText:SetText(u.show)
+	frame.CheckHint:SetText(u.hint)
+	frame.Ok:SetText(u.ok)
+	frame.OptionsButton:SetText(u.options)
+	frame.Check:SetChecked(ns.db.showWhatsNew ~= false)
+
+	local y = -116
+	for i, item in ipairs(texts.items) do
+		local it = getItem(i)
+		it:ClearAllPoints()
+		it:SetPoint("TOPLEFT", 0, y)
+		it:SetPoint("TOPRIGHT", 0, y)
+		local h = News.FillItem(it, item, i == #texts.items)
+		y = y - h - 26
+	end
+	for i = #texts.items + 1, #itemFrames do itemFrames[i]:Hide() end
+
+	y = y + 4
+	frame.BottomLine:ClearAllPoints()
+	frame.BottomLine:SetPoint("TOPLEFT", PAD, y)
+	frame.BottomLine:SetPoint("TOPRIGHT", -PAD, y)
+	frame.Check:ClearAllPoints()
+	frame.Check:SetPoint("TOPLEFT", PAD - 4, y - 14)
+	frame.Ok:ClearAllPoints()
+	frame.Ok:SetPoint("TOPRIGHT", -PAD, y - 16)
+	frame.OptionsButton:ClearAllPoints()
+	frame.OptionsButton:SetPoint("RIGHT", frame.Ok, "LEFT", -8, 0)
+	frame:SetHeight(-y + 62)
+	frame:Show()
+	if frame.Raise then frame:Raise() end
+	return frame
+end
+
+-- Version badge: all releases, the shown one marked.
+function News.OpenVersionMenu(owner, current, onPick)
+	local u = ui()
+	onPick = onPick or function(v) News.ShowPage(v) end
+	current = current or (frame and frame.version)
+	local items = { { kind = "title", text = u.versions } }
+	for i, v in ipairs(ns.NEWS_ORDER) do
+		local note = (i == 1 and u.latest) or (v == ns.NEWS_FIRST and u.first) or nil
+		if i == 1 and v == ns.NEWS_FIRST then note = u.latest end
+		items[#items + 1] = {
+			kind = "button", checked = current == v,
+			text = "v" .. v .. (note and ("  |cff9d9d9d" .. note .. "|r") or ""),
+			fn = function() onPick(v) end,
+		}
+	end
+	ns.Popup.Open(owner, items)
+end
+
+function News.Frame() return frame end
+
+-- What belongs to this login: the introduction tour (once, replaces the news and marks them
+-- seen), else the current version's page after an update (once), nothing when switched off or
+-- already seen. Returns "tour", a news version or nil.
+function News.PageForLogin()
+	if ns.Tour and ns.Tour.Due() then
+		if ns.db then ns.db.lastSeenVersion = ns.VERSION end
+		return "tour"
+	end
+	local db = ns.db
+	if not db then return nil end
+	local current = ns.VERSION
+	if db.lastSeenVersion == current then return nil end
+	db.lastSeenVersion = current
+	if db.showWhatsNew == false then return nil end
+	return ns.NEWS[current] and current or ns.NEWS_ORDER[1]
+end
+
+local function showForLogin(page)
+	if page == "tour" then ns.Tour.Show() else News.ShowPage(page) end
+end
+News.ShowForLogin = showForLogin
+
+local pending
+local watcher = CreateFrame("Frame")
+watcher:RegisterEvent("PLAYER_ENTERING_WORLD")
+watcher:RegisterEvent("PLAYER_REGEN_ENABLED")
+watcher:SetScript("OnEvent", function(_, event, isLogin, isReload)
+	if not ns.db then return end
+	if event == "PLAYER_ENTERING_WORLD" then
+		-- only the first loading screen (login or /reload), not instances
+		if not (isLogin or isReload) then return end
+		local page = News.PageForLogin()
+		if not page then return end
+		if InCombatLockdown and InCombatLockdown() then
+			pending = page
+		else
+			showForLogin(page)
+		end
+	elseif pending then
+		local page = pending
+		pending = nil
+		showForLogin(page)
+	end
+end)
