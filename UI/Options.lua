@@ -2,8 +2,8 @@ local _, ns = ...
 
 --[[
 Options: AddOns section of the game settings (as in BGF), falls back to a standalone window.
-0.1 has one page: open automatically, success sound (choice, preview, off), green items,
-preview of banner and recap.
+0.1 has one page: open automatically, green items, look (skin), success sound (choice,
+preview, off), preview of banner and recap. Always native look, whatever the recap skin.
 ]]
 
 local Options = {}
@@ -20,16 +20,21 @@ function Options.SoundName(id)
 	return name
 end
 
+function Options.SkinName(skin)
+	local L = ns.L
+	return skin == "recap" and L.SKIN_RECAP or L.SKIN_BLIZZARD
+end
+
 local function build()
 	local L = ns.L
 	panel = CreateFrame("Frame", "RunRecapOptions")
 	panel.name = L.ADDON_TITLE
 	panel:Hide()   -- the settings window shows it (OnShow then refreshes the values)
 
-	local title = W.Text(panel, ns.Fonts.Heading(16), W.GOLD)
+	local title = W.Text(panel, ns.Fonts.Game(16), W.GOLD)
 	title:SetPoint("TOPLEFT", 16, -16)
 	title:SetText(L.ADDON_TITLE .. "  |cff808080" .. ns.VERSION .. "|r")
-	local desc = W.Text(panel, ns.Fonts.Text(12), { 1, 1, 1 })
+	local desc = W.Text(panel, ns.Fonts.Game(12), { 1, 1, 1 })
 	desc:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -10)
 	desc:SetWidth(600)
 	desc:SetText(L.OPT_DESC)
@@ -37,7 +42,7 @@ local function build()
 	local auto = W.Check(panel, L.OPT_AUTO_OPEN, function() return ns.db.autoOpen end,
 		function(v) ns.db.autoOpen = v end)
 	auto:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", -2, -16)
-	local autoHint = W.Text(panel, ns.Fonts.Text(11), W.GREY)
+	local autoHint = W.Text(panel, ns.Fonts.Game(11), W.GREY)
 	autoHint:SetPoint("TOPLEFT", auto.Label, "BOTTOMLEFT", 0, -2)
 	autoHint:SetWidth(560)
 	autoHint:SetText(L.OPT_AUTO_OPEN_HINT)
@@ -48,26 +53,44 @@ local function build()
 	end)
 	green:SetPoint("TOPLEFT", auto, "BOTTOMLEFT", 0, -26)
 
-	local soundLabel = W.Text(panel, ns.Fonts.Text(12), { 1, 1, 1 })
-	soundLabel:SetPoint("TOPLEFT", green, "BOTTOMLEFT", 4, -22)
+	local skinLabel = W.Text(panel, ns.Fonts.Game(12), { 1, 1, 1 })
+	skinLabel:SetPoint("TOPLEFT", green, "BOTTOMLEFT", 4, -22)
+	skinLabel:SetWidth(130)
+	skinLabel:SetText(L.OPT_SKIN)
+	local skinDrop
+	skinDrop = W.Dropdown(panel, 220, function()
+		local items = {}
+		for _, skin in ipairs(W.SKINS) do
+			items[#items + 1] = { kind = "button", checked = (ns.db.skin or "blizzard") == skin, text = Options.SkinName(skin), fn = function()
+				ns.db.skin = skin
+				skinDrop:SetValue(Options.SkinName(skin))
+				if ns.Recap and ns.Recap.ApplySkin then ns.Recap.ApplySkin() end
+			end }
+		end
+		return items
+	end)
+	skinDrop:SetPoint("LEFT", skinLabel, "RIGHT", 4, 0)
+
+	local soundLabel = W.Text(panel, ns.Fonts.Game(12), { 1, 1, 1 })
+	soundLabel:SetPoint("TOPLEFT", skinLabel, "BOTTOMLEFT", 0, -24)
+	soundLabel:SetWidth(130)
 	soundLabel:SetText(L.OPT_SOUND)
-	local soundButton = W.Button(panel, "", 200, 24)
-	soundButton:SetPoint("LEFT", soundLabel, "RIGHT", 12, 0)
+	local soundButton
 	local play = W.Button(panel, L.OPT_SOUND_PLAY)
-	play:SetPoint("LEFT", soundButton, "RIGHT", 8, 0)
 	play:SetScript("OnClick", function() ns.Banner.PlaySound() end)
-	local soundHint = W.Text(panel, ns.Fonts.Text(11), W.GREY)
+	local soundHint = W.Text(panel, ns.Fonts.Game(11), W.GREY)
 	soundHint:SetPoint("TOPLEFT", soundLabel, "BOTTOMLEFT", 0, -10)
 	soundHint:SetWidth(560)
 	soundHint:SetText(L.OPT_SOUND_HINT)
 
 	local function refreshSound()
-		soundButton:SetText(Options.SoundName(ns.db.sound))
+		soundButton:SetValue(Options.SoundName(ns.db.sound))
+		skinDrop:SetValue(Options.SkinName(ns.db.skin))
 		play:SetEnabled((ns.db.sound or 0) ~= 0)
 		play:SetAlpha((ns.db.sound or 0) ~= 0 and 1 or 0.5)
 	end
-	soundButton:SetScript("OnClick", function(self)
-		local items = { { kind = "title", text = L.OPT_SOUND } }
+	soundButton = W.Dropdown(panel, 220, function()
+		local items = {}
 		for _, id in ipairs(ns.Banner.SOUNDS) do
 			items[#items + 1] = { kind = "button", checked = (ns.db.sound or 0) == id, text = Options.SoundName(id), fn = function()
 				ns.db.sound = id
@@ -75,27 +98,29 @@ local function build()
 				ns.Banner.PlaySound(id)
 			end }
 		end
-		ns.Popup.Open(self, items)
+		return items
 	end)
+	soundButton:SetPoint("LEFT", soundLabel, "RIGHT", 4, 0)
+	play:SetPoint("LEFT", soundButton, "RIGHT", 8, 0)
 
-	local previewLabel = W.Text(panel, ns.Fonts.Heading(14), W.GOLD)
+	local previewLabel = W.Text(panel, ns.Fonts.Game(14), W.GOLD)
 	previewLabel:SetPoint("TOPLEFT", soundHint, "BOTTOMLEFT", 0, -28)
 	previewLabel:SetText(L.OPT_PREVIEW_TITLE)
 	local preview = W.Button(panel, L.OPT_PREVIEW)
 	preview:SetPoint("TOPLEFT", previewLabel, "BOTTOMLEFT", 0, -10)
 	preview:SetScript("OnClick", function() if ns.Demo then ns.Demo.Show() end end)
-	local previewHint = W.Text(panel, ns.Fonts.Text(11), W.GREEN)
+	local previewHint = W.Text(panel, ns.Fonts.Game(11), W.GREEN)
 	previewHint:SetPoint("LEFT", preview, "RIGHT", 12, 0)
 	previewHint:SetText(L.OPT_PREVIEW_HINT)
 
-	local slash = W.Text(panel, ns.Fonts.Text(11), W.GREY)
+	local slash = W.Text(panel, ns.Fonts.Game(11), W.GREY)
 	slash:SetPoint("TOPLEFT", preview, "BOTTOMLEFT", 0, -30)
 	slash:SetWidth(600)
 	slash:SetText(L.SLASH_HELP)
 
 	panel:SetScript("OnShow", refreshSound)
 	if ns.db then refreshSound() end
-	panel.Auto, panel.Green, panel.SoundButton, panel.Play, panel.Preview = auto, green, soundButton, play, preview
+	panel.Auto, panel.Green, panel.SoundButton, panel.Play, panel.Preview, panel.SkinDrop = auto, green, soundButton, play, preview, skinDrop
 
 	if Settings and Settings.RegisterCanvasLayoutCategory and Settings.RegisterAddOnCategory then
 		local ok, cat = pcall(Settings.RegisterCanvasLayoutCategory, panel, L.ADDON_TITLE)

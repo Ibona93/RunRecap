@@ -44,7 +44,7 @@ Schwester-Addon: [BGF – Better Group Finder Forever](https://github.com/Ibona9
 | `/recap debug` | Debug-Ausgabe an/aus, zeigt Version, Client-Build, Interface-Nummer und den laufenden Run |
 | `/recap help` | Befehle auflisten |
 
-**Optionen:** automatisch öffnen (an/aus), auch grüne Items zeigen (Standard: ab Blau), Erfolgssound (7 Sounds aus dem Spiel oder aus, mit Probehören), Vorschau.
+**Optionen:** automatisch öffnen (an/aus), auch grüne Items zeigen (Standard: ab Blau), Darstellung (Blizzard oder Run Recap), Erfolgssound (7 Sounds aus dem Spiel oder aus, mit Probehören), Vorschau.
 
 ## 4. Bekannte Einschränkungen
 
@@ -63,4 +63,4 @@ Fehler und Ideen: [GitHub Issues](https://github.com/Ibona93/RunRecap/issues). T
 - Erfolgsmoment: Sound und Banner „Dungeon erfolgreich beendet!“, danach die Übersicht.
 - Würfe: wer gewonnen hat und mit Umschalt alle Würfe.
 - Alle 28 Dungeons, auch die 9 neuen Forever-Dungeons (Flügel für Scharlachrotes Kloster, Düsterbruch, Stratholme und Schwarzfelsspitze).
-- Fenster im Blizzard-Stil; Optionen: automatisch öffnen, grüne Items, Erfolgssound, Vorschau. Texte in 10 Sprachen.
+- Zwei Darstellungen: Blizzard (Standard) oder Run Recap (dunkel & gold); Optionen: automatisch öffnen, grüne Items, Darstellung, Erfolgssound, Vorschau. Texte in 10 Sprachen.

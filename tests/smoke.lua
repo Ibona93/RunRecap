@@ -50,6 +50,7 @@ Frame.__index = function(_, key)
 	if key == "SetSize" then return function(s, w, h) s.__w, s.__h = w, h end end
 	if key == "GetStringWidth" then return function(s) return #(s.__text or "") * 6 end end
 	if key == "GetStringHeight" then return function() return 14 end end
+	if key == "SetShown" then return function(s, v) s.__shown = v and true or false end end
 	if key == "EnableMouse" then return function(s, v) s.__mouse = v or nil end end
 	if key == "SetAlpha" then return function(s, a) s.__alpha = a end end
 	if key == "GetAlpha" then return function(s) return s.__alpha or 1 end end
@@ -399,6 +400,24 @@ do
 	ns.Banner.Celebrate(ns.Demo.Run())
 	check("sound off + auto open off: no sound, only a chat line", #played == 0 and #chat == 1)
 	ns.db.sound, ns.db.autoOpen = 878, true
+	-- highlights box and skins (preview recap is open)
+	local f2 = ns.Recap.Frame()
+	check("highlights: three tiles for the preview run", f2.Highlights.Tiles[1]:IsShown() and f2.Highlights.Tiles[3]:IsShown()
+		and f2.Highlights.Tiles[1].Value.__text:find("Captain Greenskin", 1, true) ~= nil and not f2.Highlights.Empty:IsShown())
+	local panel = ns.Options.Panel()
+	ok, err = pcall(panel.SkinDrop.__scripts.OnClick, panel.SkinDrop)
+	check("skin dropdown opens the popup list", ok, err)
+	ns.db.skin = "recap"
+	ok, err = pcall(ns.Recap.ApplySkin)
+	local f3 = ns.Recap.Frame()
+	check("skin 'recap': dark window shown instead, same run", ok and f3 ~= f2 and f3.template == "dark" and f3:IsShown()
+		and not f2:IsShown() and f3.run == f2.run, err)
+	check("skin 'recap': Philosopher/Noto Sans", ns.Fonts.PathFor("heading"):find("Philosopher") and ns.Fonts.PathFor("text"):find("NotoSans")
+		and ns.Fonts.PathFor("game") == "Fonts\\FRIZQT__.TTF")
+	ns.db.skin = "blizzard"
+	pcall(ns.Recap.ApplySkin)
+	check("back to 'blizzard': the native window again", ns.Recap.Frame() == f2 and f2:IsShown())
+	check("options: sound and skin names", ns.Options.SkinName("recap") == ns.L.SKIN_RECAP and ns.Options.SkinName("blizzard") == ns.L.SKIN_BLIZZARD)
 	check("options: sound names", ns.Options.SoundName(878) == "Quest abgeschlossen" and ns.Options.SoundName(0) == "Aus")
 	check("every event handler registered", #ns.EVENTS >= 20)
 end

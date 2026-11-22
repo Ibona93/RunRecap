@@ -44,7 +44,7 @@ Sister addon: [BGF – Better Group Finder Forever](https://github.com/Ibona93/B
 | `/recap debug` | Debug output on/off, shows version, client build, interface number and the current run |
 | `/recap help` | List the commands |
 
-**Options:** open automatically (on/off), show green items too (default: blue and better), success sound (7 game sounds or off, with preview), preview.
+**Options:** open automatically (on/off), show green items too (default: blue and better), look (Blizzard or Run Recap), success sound (7 game sounds or off, with preview), preview.
 
 ## 4. Known limitations
 
@@ -63,4 +63,4 @@ Bug reports and ideas: [GitHub Issues](https://github.com/Ibona93/RunRecap/issue
 - Success moment: sound and "Dungeon completed!" banner, then the recap.
 - Rolls: who won, and with Shift every roll.
 - All 28 dungeons, including the 9 new Forever dungeons (wings for Scarlet Monastery, Dire Maul, Stratholme and Blackrock Spire).
-- Native Blizzard windows; options: open automatically, green items, success sound, preview. Texts in 10 languages.
+- Two looks: Blizzard (default) or Run Recap (dark & gold); options: open automatically, green items, look, success sound, preview. Texts in 10 languages.

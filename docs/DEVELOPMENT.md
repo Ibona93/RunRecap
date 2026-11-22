@@ -83,7 +83,7 @@ Offline tests can't replace the game. Before testing, enter `/console taintLog 1
 | 2 | `/recap demo` | sound "Quest complete", banner fades in in the middle (Cinzel title, dungeon name, status line), ~3 s, fades out, recap opens at the same spot |
 | 3 | Preview recap: hover item names, rest of item rows, boss rows; hold Shift | item tooltip + "Looted by"/"Source"; winner with roll, Shift: all rolls; boss: kill time, Shift: wipes/deaths/items |
 | 4 | Recap: looks like a Blizzard window (frame, chest portrait, red buttons); drag, Escape, ✕, Close, Options | moves (position kept), closes with the window sound, options open |
-| 5 | Options → AddOns → Run Recap Forever | page shows; sound list (7 sounds + Off) plays the choice; "Play"; "Show preview"; green items on/off changes the open recap |
+| 5 | Options → AddOns → Run Recap Forever | page shows; "Look" and "Success sound" look like dropdowns; skin switch changes the open recap at once; sound list (7 sounds + Off) plays the choice; "Play"; "Show preview"; green items on/off changes the open recap |
 | 6 | Run a dungeon to the end | banner + sound after the last boss, recap after combat; bosses with minute and fight time, end boss tag, loot with looters in class colours, late rolls fill in live |
 | 7 | Leave as a ghost after a wipe, come back | the run goes on (bosses, deaths kept) |
 | 8 | Hearth out alive, come back within 30 min | the run goes on; duration without the time outside |
@@ -106,10 +106,10 @@ Logic/Dungeons.lua  lookups: encounter/NPC ID -> boss, wing complete?
 Logic/Parse.lua     global strings -> patterns; loot, roll and money lines; item links; GUIDs; clock, coins
 Logic/Run.lua       the run: start/pause/end, bosses, wipes, deaths, loot sources, rolls, summary
 Dev/Probe.lua       hidden developer probe: /recap probe, /recap sounds, /recap sound <id>
-UI/Fonts.lua        font objects: game font in every size (native look), Cinzel for the banner title
-UI/Widgets.lua      native Blizzard window/inset/button templates (with fallbacks), colours, Escape handling, popup menu
+UI/Fonts.lua        font objects: game font (skin "blizzard", options), Philosopher/Noto Sans (skin "recap"), Cinzel (banner title)
+UI/Widgets.lua      skins (native Blizzard templates with fallbacks / dark & gold), dropdown look, colours, Escape handling, popup menu
 UI/Banner.lua       success sound + banner, then the recap (after combat)
-UI/Recap.lua        recap window (ButtonFrameTemplate, chest portrait, two insets) with tooltips
+UI/Recap.lua        recap window, one per skin (bosses & loot, run facts, highlights box) with tooltips
 UI/Options.lua      options page (Settings → AddOns, fallback window)
 UI/Demo.lua         preview with a made-up run (/recap demo)
 Media/Fonts/        shipped fonts + SIL OFL licenses
@@ -125,4 +125,4 @@ Folder `RunRecap/` with all addon files, **without** `.git`, `.github`, `release
 
 ## Style
 
-Native look (22.11.2026): Blizzard window templates (`ButtonFrameTemplate` → `BasicFrameTemplateWithInset` → dialog backdrop), `InsetFrameTemplate`, `UIPanelButtonTemplate`, the game font in gold/white/grey, green hints; only the success banner has its own look (Cinzel title, TGA band); fonts via `SetFontObject` only; own popups instead of Blizzard menus; links as copyable edit boxes; no `hooksecurefunc` on Blizzard functions; never touch Blizzard's loot or roll frames, only read events.
+Two skins for the recap window (`RunRecapDB.skin`): "blizzard" (default) = Blizzard window templates (`ButtonFrameTemplate` → `BasicFrameTemplateWithInset` → dialog backdrop), `InsetFrameTemplate`, `UIPanelButtonTemplate`, game font; "recap" = dark brown, golden borders, Philosopher/Noto Sans. Options and popups always native, dropdowns look like the game's (dark field, yellow arrow) but open our own popup; the success banner has its own look (Cinzel title, TGA band); fonts via `SetFontObject` only; own popups instead of Blizzard menus; links as copyable edit boxes; no `hooksecurefunc` on Blizzard functions; never touch Blizzard's loot or roll frames, only read events.

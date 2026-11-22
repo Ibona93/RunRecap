@@ -12,6 +12,7 @@ ns.DEFAULTS = {
 	autoOpen = true,        -- banner + recap after the last boss
 	sound = 878,            -- success sound kit ID ("Quest complete"), 0 = off
 	showGreen = false,      -- list green items (otherwise counted as hidden)
+	skin = "blizzard",      -- recap window look: "blizzard" (native) or "recap" (dark & gold)
 	runs = {},              -- finished, completed runs (newest last, max. 20)
 	currentRun = nil,       -- the run in progress, saved continuously so /reload loses nothing
 	learned = {},           -- [itemID] = "mapID:bossKey", learned from sure loot sources

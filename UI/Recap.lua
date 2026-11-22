@@ -16,11 +16,16 @@ local WIDTH, HEIGHT = 680, 590
 local INSET_W, LEFT_W, RIGHT_W, TOP = 408, 372, 242, 76
 local PORTRAIT = "Interface\\Icons\\INV_Box_02"
 local SKULL = "|TInterface\\TargetingFrame\\UI-TargetingFrame-Skull:12:12:0:0|t "
-local frame, scroll, content
-local pools = { boss = {}, item = {}, line = {} }
-local used = { boss = 0, item = 0, line = 0 }
-local facts = {}
+local HIGHLIGHT_H = 172
+-- one window per skin ("blizzard", "recap"); the locals below point to the active one
+local windows = {}
+local frame, scroll, content, pools, used, facts
 local hovered            -- widget under the mouse (Shift changes its tooltip)
+local HL_ICONS = {
+	fastest = "Interface\\Icons\\INV_Misc_PocketWatch_01",
+	loot = "Interface\\Icons\\INV_Box_02",
+	deaths = "Interface\\Icons\\INV_Misc_Bone_HumanSkull_01",
+}
 
 local function L() return ns.L end
 
@@ -303,12 +308,13 @@ end
 local function renderFacts(run, s)
 	local l = L()
 	local box = frame.Facts
-	local i, y = 0, -34
+	local i, y = 0, -32
 	local function row(label, value, rgb, opts)
 		i = i + 1
 		local f = factRow(i)
 		opts = opts or {}
-		f.Label:SetFontObject(opts.header and ns.Fonts.Heading(13) or ns.Fonts.Text(12))
+		f.Label:SetFontObject(ns.Fonts.Text(12))
+		f.Value:SetFontObject(ns.Fonts.Text(12))
 		f.Label:ClearAllPoints()
 		f.Value:ClearAllPoints()
 		f.Label:SetPoint("TOPLEFT", box, "TOPLEFT", 12, y)
@@ -316,11 +322,11 @@ local function renderFacts(run, s)
 			f.Label:SetPoint("RIGHT", box, "RIGHT", -12, 0)
 			f.Label:SetWordWrap(true)
 		else
-			f.Label:SetWidth(opts.header and (RIGHT_W - 24) or 150)
+			f.Label:SetWidth(RIGHT_W - 70)
 			f.Label:SetWordWrap(false)
 		end
 		f.Label:SetText(label)
-		local lc = opts.header and W.GOLD or opts.labelColor or W.GOLD
+		local lc = opts.labelColor or W.GOLD
 		f.Label:SetTextColor(lc[1], lc[2], lc[3])
 		f.Value:SetPoint("TOPRIGHT", box, "TOPRIGHT", -12, y)
 		f.Value:SetText(value or "")
@@ -334,35 +340,51 @@ local function renderFacts(run, s)
 	row(l.FACT_DURATION, ns.Parse.Clock(s.duration))
 	row(l.FACT_BOSSES, ("%d/%d"):format(s.done, s.total), s.done >= s.total and W.GREEN or W.YELLOW)
 	row(l.FACT_WIPES, tostring(s.wipes), s.wipes == 0 and W.GREEN or W.YELLOW)
-	row(l.FACT_GOLD, ns.Parse.Coins(s.money), nil, { gap = 14 })
+	row(l.FACT_GOLD, ns.Parse.Coins(s.money))
 
-	row(l.FACT_DEATHS, "", nil, { header = true })
+	-- deaths, below a thin separator
+	y = y - 4
+	box.Separator:ClearAllPoints()
+	box.Separator:SetPoint("TOPLEFT", box, "TOPLEFT", 10, y)
+	box.Separator:SetPoint("TOPRIGHT", box, "TOPRIGHT", -10, y)
+	y = y - 9
+	row(l.FACT_DEATHS, "")
 	if #s.deaths == 0 and #s.noDeaths == 0 then
 		row(l.NO_DEATHS, "", nil, { labelColor = W.GREY })
 	end
 	for _, d in ipairs(s.deaths) do
-		row(playerName(run, d.name), tostring(d.n), d.n >= 3 and W.YELLOW or { 1, 1, 1 })
+		row(playerName(run, d.name), tostring(d.n), d.n >= 3 and W.YELLOW or { 1, 1, 1 }, { labelColor = { 1, 1, 1 }, gap = 4 })
 	end
 	if #s.noDeaths > 0 then
 		row(l.NO_DEATH_PLAYERS:format(table.concat(s.noDeaths, ", ")), "", nil, { wide = true, labelColor = W.GREY })
-	end
-	y = y - 8
-
-	local highlights = {}
-	if s.fastest then highlights[#highlights + 1] = { l.HL_FASTEST, s.fastest.name .. " (" .. ns.Parse.Clock(s.fastest.fight) .. ")" } end
-	if s.mostLoot then highlights[#highlights + 1] = { l.HL_MOST_LOOT, playerName(run, s.mostLoot.name) .. " (" .. s.mostLoot.n .. ")" } end
-	if s.mostDeaths then highlights[#highlights + 1] = { l.HL_MOST_DEATHS, playerName(run, s.mostDeaths.name) .. " (" .. s.mostDeaths.n .. ")" } end
-	if #highlights > 0 then
-		row(l.FACT_HIGHLIGHTS, "", nil, { header = true })
-		for _, h in ipairs(highlights) do
-			row(h[1], "", nil, { labelColor = W.GREY, gap = 1 })
-			row("  " .. h[2], "", nil, { wide = true, labelColor = { 1, 1, 1 } })
-		end
 	end
 	for j = i + 1, #facts do
 		facts[j].Label:Hide()
 		facts[j].Value:Hide()
 	end
+
+	-- highlights: own box, one tile per highlight (icon, grey label, white value)
+	local list = {}
+	if s.fastest then
+		list[#list + 1] = { HL_ICONS.fastest, l.HL_FASTEST, (s.fastest.name or "?") .. " · " .. ns.Parse.Clock(s.fastest.fight) }
+	end
+	if s.mostLoot then
+		list[#list + 1] = { HL_ICONS.loot, l.HL_MOST_LOOT, playerName(run, s.mostLoot.name) .. " · " .. s.mostLoot.n }
+	end
+	if s.mostDeaths then
+		list[#list + 1] = { HL_ICONS.deaths, l.HL_MOST_DEATHS, playerName(run, s.mostDeaths.name) .. " · " .. s.mostDeaths.n }
+	end
+	local hl = frame.Highlights
+	for k, tile in ipairs(hl.Tiles) do
+		local h = list[k]
+		tile:SetShown(h ~= nil)
+		if h then
+			tile.Icon:SetTexture(h[1])
+			tile.Label:SetText(h[2])
+			tile.Value:SetText(h[3])
+		end
+	end
+	hl.Empty:SetShown(#list == 0)
 end
 
 -------------------------------------------------------------------------------
@@ -447,9 +469,31 @@ local function savePosition()
 	ns.db.window = { point = point, relPoint = relPoint, x = x, y = y }
 end
 
-local function create()
+local function newTile(parent, index)
+	local t = CreateFrame("Frame", nil, parent)
+	t:SetHeight(42)
+	t:SetPoint("TOPLEFT", 10, -30 - (index - 1) * 46)
+	t:SetPoint("RIGHT", parent, "RIGHT", -10, 0)
+	t.Icon = t:CreateTexture(nil, "ARTWORK")
+	t.Icon:SetSize(32, 32)
+	t.Icon:SetPoint("LEFT", 0, 0)
+	t.Icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+	t.Label = W.Text(t, ns.Fonts.Text(11), W.GREY)
+	t.Label:SetPoint("TOPLEFT", t.Icon, "TOPRIGHT", 8, -1)
+	t.Label:SetPoint("RIGHT", t, "RIGHT", 0, 0)
+	t.Label:SetWordWrap(false)
+	t.Value = W.Text(t, ns.Fonts.Text(12), { 1, 1, 1 })
+	t.Value:SetPoint("BOTTOMLEFT", t.Icon, "BOTTOMRIGHT", 8, 1)
+	t.Value:SetPoint("RIGHT", t, "RIGHT", 0, 0)
+	t.Value:SetWordWrap(false)
+	return t
+end
+
+local function create(skin)
 	local l = L()
-	frame = W.NativeWindow("RunRecapFrame", UIParent)
+	local native = skin ~= "recap"
+	frame = W.SkinWindow(native and "RunRecapFrame" or "RunRecapFrameDark", skin)
+	frame.skin = skin
 	frame:SetSize(WIDTH, HEIGHT)
 	frame:SetFrameStrata("DIALOG")
 	frame:SetToplevel(true)
@@ -462,23 +506,33 @@ local function create()
 		self:StopMovingOrSizing()
 		savePosition()
 	end)
-	-- the template's single inset is replaced by two (left: bosses, right: facts)
-	for _, key in ipairs({ "Inset", "InsetBg" }) do
-		local inset = W.Child(frame, key)
-		if inset then inset:Hide() end
+	local hasPortrait = false
+	if native then
+		-- the template's single inset is replaced by our own boxes
+		for _, key in ipairs({ "Inset", "InsetBg" }) do
+			local inset = W.Child(frame, key)
+			if inset then inset:Hide() end
+		end
+		W.SetTitle(frame, l.RECAP_TITLE)
+		hasPortrait = W.SetPortrait(frame, PORTRAIT)
+	else
+		frame.Title = W.Text(frame, ns.Fonts.Heading(20), W.GOLD)
+		frame.Title:SetPoint("TOPLEFT", 16, -10)
+		frame.Title:SetText(l.RECAP_TITLE)
 	end
-	W.SetTitle(frame, l.RECAP_TITLE)
-	local hasPortrait = W.SetPortrait(frame, PORTRAIT)
 
-	local headerX = hasPortrait and 66 or 16
-	frame.Dungeon = W.Text(frame, ns.Fonts.Heading(16), W.GOLD)
-	frame.Dungeon:SetPoint("TOPLEFT", headerX, -30)
-	frame.Dungeon:SetPoint("RIGHT", frame, "RIGHT", -16, 0)
+	frame.Dungeon = W.Text(frame, ns.Fonts.Heading(16), native and W.GOLD or { 1, 1, 1 })
+	if native then
+		frame.Dungeon:SetPoint("TOPLEFT", hasPortrait and 66 or 16, -30)
+	else
+		frame.Dungeon:SetPoint("TOPLEFT", frame.Title, "BOTTOMLEFT", 0, -2)
+	end
+	frame.Dungeon:SetPoint("RIGHT", frame, "RIGHT", -40, 0)
 	frame.Dungeon:SetWordWrap(false)
 	frame.Sub = W.Text(frame, ns.Fonts.Text(11), W.GREY)
-	frame.Sub:SetPoint("TOPLEFT", frame.Dungeon, "BOTTOMLEFT", 0, -4)
+	frame.Sub:SetPoint("TOPLEFT", frame.Dungeon, "BOTTOMLEFT", 0, -3)
 
-	local left = W.Inset(frame)
+	local left = W.SkinInset(frame, skin)
 	left:SetPoint("TOPLEFT", 10, -TOP)
 	left:SetPoint("BOTTOMLEFT", 10, 28)
 	left:SetWidth(INSET_W)
@@ -493,30 +547,46 @@ local function create()
 	content = scroll.Content
 	content:SetWidth(LEFT_W)
 
-	frame.Facts = W.Inset(frame)
+	frame.Highlights = W.SkinInset(frame, skin)
+	frame.Highlights:SetPoint("BOTTOMRIGHT", -10, 28)
+	frame.Highlights:SetPoint("BOTTOMLEFT", left, "BOTTOMRIGHT", 6, 0)
+	frame.Highlights:SetHeight(HIGHLIGHT_H)
+	frame.Highlights.Header = W.Text(frame.Highlights, ns.Fonts.Heading(13), W.GOLD)
+	frame.Highlights.Header:SetPoint("TOPLEFT", 12, -9)
+	frame.Highlights.Header:SetText(l.FACT_HIGHLIGHTS)
+	frame.Highlights.Tiles = {}
+	for k = 1, 3 do frame.Highlights.Tiles[k] = newTile(frame.Highlights, k) end
+	frame.Highlights.Empty = W.Text(frame.Highlights, ns.Fonts.Text(11), W.GREY)
+	frame.Highlights.Empty:SetPoint("TOPLEFT", 12, -32)
+	frame.Highlights.Empty:SetText(l.NO_HIGHLIGHTS)
+
+	frame.Facts = W.SkinInset(frame, skin)
 	frame.Facts:SetPoint("TOPLEFT", left, "TOPRIGHT", 6, 0)
-	frame.Facts:SetPoint("BOTTOMRIGHT", -10, 28)
+	frame.Facts:SetPoint("BOTTOMRIGHT", frame.Highlights, "TOPRIGHT", 0, 6)
 	frame.Facts.Header = W.Text(frame.Facts, ns.Fonts.Heading(13), W.GOLD)
 	frame.Facts.Header:SetPoint("TOPLEFT", 12, -9)
 	frame.Facts.Header:SetText(l.RUN_FACTS)
+	frame.Facts.Separator = W.Separator(frame.Facts, skin)
 
 	frame.Hint = W.Text(frame, ns.Fonts.Text(11), W.GREEN)
 	frame.Hint:SetPoint("BOTTOMLEFT", 16, 9)
 	frame.Hint:SetText(l.SHIFT_HINT)
 
-	frame.Close = W.Button(frame, l.CLOSE, 96, 22)
+	frame.Close = W.SkinButton(frame, l.CLOSE, 96, 22, skin)
 	frame.Close:SetPoint("BOTTOMRIGHT", -8, 4)
 	frame.Close:SetScript("OnClick", function() Recap.Hide() end)
-	frame.Options = W.Button(frame, l.OPTIONS, 96, 22)
-	frame.Options:SetPoint("RIGHT", frame.Close, "LEFT", -2, 0)
+	frame.Options = W.SkinButton(frame, l.OPTIONS, 96, 22, skin)
+	frame.Options:SetPoint("RIGHT", frame.Close, "LEFT", native and -2 or -6, 0)
 	frame.Options:SetScript("OnClick", function() if ns.Options then ns.Options.Open() end end)
 
+	local own = frame
 	frame:RegisterEvent("MODIFIER_STATE_CHANGED")
 	frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
 	frame:SetScript("OnEvent", function(_, event)
+		if own ~= frame then return end
 		if event == "MODIFIER_STATE_CHANGED" then
 			if hovered and hovered:IsShown() and hovered.Refresh then hovered.Refresh(hovered) end
-		elseif frame:IsShown() then
+		elseif own:IsShown() then
 			Recap.RequestRender()
 		end
 	end)
@@ -529,7 +599,24 @@ local function create()
 		if PlaySound then pcall(PlaySound, 840) end
 	end)
 	W.CloseOnEscape(frame, function() Recap.Hide() end)
+	pools = { boss = {}, item = {}, line = {} }
+	used = { boss = 0, item = 0, line = 0 }
+	facts = {}
+	windows[skin] = { frame = frame, scroll = scroll, content = content, pools = pools, used = used, facts = facts }
 end
+
+-- Makes the window of `skin` the active one (built on first use).
+local function useSkin(skin)
+	skin = skin == "recap" and "recap" or "blizzard"
+	local w = windows[skin]
+	if not w then
+		create(skin)
+		return
+	end
+	frame, scroll, content, pools, used, facts = w.frame, w.scroll, w.content, w.pools, w.used, w.facts
+end
+
+local function currentSkin() return ns.db and ns.db.skin or "blizzard" end
 
 local function applyPosition()
 	frame:ClearAllPoints()
@@ -543,7 +630,11 @@ end
 
 function Recap.Show(run)
 	if not run then return end
-	if not frame then create() end
+	if not frame or frame.skin ~= currentSkin() then
+		local old = frame
+		useSkin(currentSkin())
+		if old and old ~= frame and old:IsShown() then old:Hide() end
+	end
 	if not frame:IsShown() then applyPosition() end
 	frame.run = run
 	frame:Show()
@@ -563,6 +654,15 @@ end
 
 function Recap.IsShown() return frame and frame:IsShown() or false end
 function Recap.Frame() return frame end
+
+-- Skin changed in the options: show the open recap in the new skin.
+function Recap.ApplySkin()
+	if not frame or frame.skin == currentSkin() then return end
+	local wasShown, run = frame:IsShown(), frame.run
+	if wasShown then frame:Hide() end
+	useSkin(currentSkin())
+	if wasShown and run then Recap.Show(run) end
+end
 
 local renderPending = false
 function Recap.RequestRender()

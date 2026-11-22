@@ -1,8 +1,10 @@
 local ADDON_NAME, ns = ...
 
 --[[
-Shared look: native Blizzard frames (decision 22.11.2026) - window and inset templates,
-red panel buttons, game fonts, gold headings, green hints. Own small popup menu instead of
+Shared look. Two skins for the recap window (Felix, 22.11.2026):
+  "blizzard" (default) - native Blizzard templates: window, insets, red panel buttons, game font
+  "recap"              - Run Recap's own dark look: dark brown, golden borders, Philosopher/Noto Sans
+Options and popups always look native. Own small popup menu and dropdown look instead of
 Blizzard's menus (taint), own Escape handling instead of UISpecialFrames. Only plain,
 unprotected frames.
 ]]
@@ -17,6 +19,8 @@ W.GREY = { 0.62, 0.62, 0.62 }
 W.DARKGREY = { 0.45, 0.45, 0.45 }
 W.GREEN = { 0.25, 1, 0.25 }
 W.YELLOW = { 1, 0.85, 0.2 }
+W.BORDER = { 0.6, 0.48, 0.25 }
+W.SKINS = { "blizzard", "recap" }
 
 local QUALITY_HEX = {
 	[0] = "9d9d9d", [1] = "ffffff", [2] = "1eff00", [3] = "0070dd", [4] = "a335ee", [5] = "ff8000", [6] = "e6cc80", [7] = "00ccff",
@@ -111,7 +115,7 @@ function W.SetTitle(f, text)
 	local tc = W.Child(f, "TitleContainer")
 	local fs = W.Child(f, "TitleText") or (tc and W.Child(tc, "TitleText"))
 	if not fs then
-		fs = W.Text(f, ns.Fonts.Heading(13), W.GOLD, "OVERLAY")
+		fs = W.Text(f, ns.Fonts.Game(13), W.GOLD, "OVERLAY")
 		fs:SetPoint("TOP", 0, -6)
 		f.TitleText = fs
 	end
@@ -168,7 +172,7 @@ end
 function W.Check(parent, text, getter, setter)
 	local cb = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
 	cb:SetSize(24, 24)
-	cb.Label = W.Text(cb, ns.Fonts.Text(12), { 1, 1, 1 })
+	cb.Label = W.Text(cb, ns.Fonts.Game(12), { 1, 1, 1 })
 	cb.Label:SetPoint("LEFT", cb, "RIGHT", 4, 0)
 	cb.Label:SetText(text)
 	cb:SetScript("OnShow", function(self) self:SetChecked(getter() and true or false) end)
@@ -209,6 +213,112 @@ function W.CloseOnEscape(f, onClose)
 			self:SetPropagateKeyboardInput(true)
 		end
 	end)
+end
+
+
+-------------------------------------------------------------------------------
+-- Skins
+-------------------------------------------------------------------------------
+
+-- Run Recap's own dark window: dark background, golden border, warm glow at the top.
+function W.DarkWindow(name, parent)
+	local f = CreateFrame("Frame", name, parent or UIParent, "BackdropTemplate")
+	W.Backdrop(f, { 0.05, 0.043, 0.035, 0.97 }, W.BORDER, 2)
+	local glow = f:CreateTexture(nil, "BACKGROUND", nil, 1)
+	glow:SetPoint("TOPLEFT", 2, -2)
+	glow:SetPoint("TOPRIGHT", -2, -2)
+	glow:SetHeight(90)
+	glow:SetColorTexture(0.22, 0.16, 0.06, 0.4)
+	if glow.SetGradient and CreateColor then
+		pcall(glow.SetGradient, glow, "VERTICAL", CreateColor(0.05, 0.04, 0.03, 0), CreateColor(0.25, 0.18, 0.07, 0.55))
+	end
+	local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
+	close:SetPoint("TOPRIGHT", -2, -2)
+	f.CloseButton = close
+	f.template = "dark"
+	return f
+end
+
+function W.SkinWindow(name, skin)
+	if skin == "recap" then return W.DarkWindow(name) end
+	return (W.NativeWindow(name))
+end
+
+function W.SkinInset(parent, skin)
+	if skin == "recap" then
+		local f = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+		W.Backdrop(f, { 0.09, 0.07, 0.05, 0.85 }, { 0.45, 0.36, 0.2, 1 })
+		return f
+	end
+	return W.Inset(parent)
+end
+
+-- Gold text on dark brown with a golden border (the "recap" skin's button).
+function W.FlatButton(parent, text, width, height)
+	local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
+	b:SetSize(width or 100, height or 22)
+	W.Backdrop(b, { 0.14, 0.1, 0.04, 0.95 }, { 0.8, 0.64, 0.25, 1 })
+	b.Label = W.Text(b, ns.Fonts.Text(12), W.GOLD)
+	b.Label:SetPoint("CENTER")
+	b.Label:SetJustifyH("CENTER")
+	b.Label:SetText(text or "")
+	b:SetScript("OnEnter", function(self) if self.SetBackdropColor then self:SetBackdropColor(0.28, 0.2, 0.06, 0.95) end end)
+	b:SetScript("OnLeave", function(self) if self.SetBackdropColor then self:SetBackdropColor(0.14, 0.1, 0.04, 0.95) end end)
+	return b
+end
+
+function W.SkinButton(parent, text, width, height, skin)
+	if skin == "recap" then return W.FlatButton(parent, text, width, height) end
+	return W.Button(parent, text, width, height)
+end
+
+-- Thin separator line inside a box.
+function W.Separator(parent, skin)
+	local t = parent:CreateTexture(nil, "ARTWORK")
+	if skin == "recap" then
+		t:SetColorTexture(W.BORDER[1], W.BORDER[2], W.BORDER[3], 0.6)
+	else
+		t:SetColorTexture(0.6, 0.6, 0.6, 0.35)
+	end
+	t:SetHeight(1)
+	return t
+end
+
+-------------------------------------------------------------------------------
+-- Dropdown look (like the game's dropdowns: dark field, yellow arrow button); the list is
+-- our own popup. items(): popup items; text: shown value.
+-------------------------------------------------------------------------------
+
+function W.Dropdown(parent, width, items)
+	local d = CreateFrame("Button", nil, parent, "BackdropTemplate")
+	d:SetSize(width or 200, 24)
+	if d.SetBackdrop then
+		d:SetBackdrop({
+			bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+			tile = true, tileSize = 16, edgeSize = 12,
+			insets = { left = 3, right = 3, top = 3, bottom = 3 },
+		})
+		d:SetBackdropColor(0, 0, 0, 0.75)
+		d:SetBackdropBorderColor(0.55, 0.55, 0.55, 1)
+	end
+	d.Value = W.Text(d, ns.Fonts.Game(12), { 1, 1, 1 })
+	d.Value:SetPoint("LEFT", 9, 0)
+	d.Value:SetPoint("RIGHT", -28, 0)
+	d.Value:SetWordWrap(false)
+	d.Arrow = CreateFrame("Button", nil, d)
+	d.Arrow:SetSize(24, 24)
+	d.Arrow:SetPoint("RIGHT", 1, 0)
+	d.Arrow:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Up")
+	d.Arrow:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Down")
+	d.Arrow:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+	local function open() ns.Popup.Open(d, items(), d:GetWidth()) end
+	d:SetScript("OnClick", open)
+	d.Arrow:SetScript("OnClick", open)
+	d:SetScript("OnEnter", function(self) if self.SetBackdropBorderColor then self:SetBackdropBorderColor(1, 0.82, 0, 1) end end)
+	d:SetScript("OnLeave", function(self) if self.SetBackdropBorderColor then self:SetBackdropBorderColor(0.55, 0.55, 0.55, 1) end end)
+	d.SetValue = function(self, text) self.Value:SetText(text or "") end
+	return d
 end
 
 -------------------------------------------------------------------------------
@@ -266,7 +376,7 @@ local function popupRow(i)
 	r.Dot:SetTexture(W.WHITE)
 	r.Dot:SetSize(6, 6)
 	r.Dot:SetPoint("LEFT", PAD - 2, 0)
-	r.Text = W.Text(r, ns.Fonts.Text(12))
+	r.Text = W.Text(r, ns.Fonts.Game(12))
 	r.Text:SetWordWrap(false)
 	r.Line = r:CreateTexture(nil, "ARTWORK")
 	r.Line:SetColorTexture(0.6, 0.6, 0.6, 0.4)
@@ -283,11 +393,11 @@ local function popupRow(i)
 	return r
 end
 
-function Popup.Open(owner, items)
+function Popup.Open(owner, items, minWidth)
 	if not popup then createPopup() end
 	if popup:IsShown() and Popup.owner == owner then close() return end
 	Popup.owner = owner
-	local width, y = 120, -6
+	local width, y = minWidth or 120, -6
 	for i, item in ipairs(items) do
 		local r = popupRow(i)
 		r.item = item
