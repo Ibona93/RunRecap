@@ -1,0 +1,177 @@
+# Publishes the versions listed in releases/notes/releases.txt:
+#   * uploads the ZIP from releases/ to CurseForge (once per line; a marker file in
+#     releases/notes/uploaded/ records it), with the changelog from releases/notes/<version>.md
+#   * Discord announcement after a fresh "release" upload: prepared, but Run Recap has no
+#     Discord yet (Felix, 22.11.2026) - without webhook secrets it is simply skipped.
+#     A Discord failure never fails the run (the upload is already recorded).
+#   * creates the GitHub release (tag at the listed commit) for type "release"; if that
+#     fails, the announcement still goes out (CurseForge link only) and the run fails.
+# Line format: <version> <commit> [release|beta|alpha]   (default: release)
+# A line is only added after Felix tested the version and said "go hochladen".
+# Taken over from BGF (Better Group Finder Forever) and adapted for Run Recap.
+# Runs when the notes change on main, or by hand (Actions -> Releases -> Run workflow).
+# By hand with "announce" set to a version: only posts that version's Discord
+# announcement again (no upload, no GitHub release) - for testing the webhooks.
+#
+# Discord settings (repo Settings -> Secrets and variables -> Actions):
+#   secrets   DISCORD_WEBHOOK_EN, DISCORD_WEBHOOK_DE   (webhook URLs; a missing one is skipped)
+#   variables DISCORD_RELEASE_ROLE_ID                  (role to ping in English; optional)
+#             CF_PROJECT_URL                           (CurseForge page; optional, see below)
+name: Releases
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "releases/notes/**"
+      - ".github/workflows/release.yml"
+  workflow_dispatch:
+    inputs:
+      announce:
+        description: "Only post the Discord announcement for this version (e.g. 0.10.1). Leave empty for a normal run."
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+env:
+  CF_PROJECT_ID: "1824577"   # Run Recap Forever on CurseForge
+  CF_GAME_VERSION: "1.60.1"     # WoW Forever client version on CurseForge
+  CF_API: "https://wow.curseforge.com/api"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Publish missing releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          DISCORD_WEBHOOK_EN: ${{ secrets.DISCORD_WEBHOOK_EN }}
+          DISCORD_WEBHOOK_DE: ${{ secrets.DISCORD_WEBHOOK_DE }}
+          DISCORD_ROLE_ID: ${{ vars.DISCORD_RELEASE_ROLE_ID }}
+          CF_PROJECT_URL: ${{ vars.CF_PROJECT_URL }}
+          ANNOUNCE_ONLY: ${{ github.event.inputs.announce }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          gameVersionId=""
+          cfUrl="${CF_PROJECT_URL:-https://www.curseforge.com/projects/$CF_PROJECT_ID}"
+          ghReleaseBase="https://github.com/${GITHUB_REPOSITORY}/releases/tag"
+          ghFailed=0
+
+          # post one Discord message: discord_post <webhook> <title> <changelog text> <link lines> [role id]
+          discord_post() {
+            local hook="$1" title="$2" body="$3" link="$4" role="${5:-}" payload
+            if [ -z "$hook" ]; then
+              echo "no webhook set for '$title', skipped"
+              return 0
+            fi
+            payload=$(jq -n --arg title "$title" --arg body "$body" --arg link "$link" --arg role "$role" '
+              ($body | gsub("^\\s+|\\s+$"; "")) as $b
+              | (if ($b | length) > 1500 then ($b[0:1500] | sub("\n[^\n]*$"; "")) + "\n…" else $b end) as $t
+              | { content: ((if $role != "" then "<@&\($role)> " else "" end)
+                            + "**\($title)**\n\n\($t)\n\n\($link)"),
+                  allowed_mentions: { parse: [], roles: (if $role != "" then [$role] else [] end) } }') || return 1
+            curl -sS --fail-with-body -H "Content-Type: application/json" -d "$payload" "$hook" || return 1
+            echo "posted '$title' to Discord"
+          }
+
+          # announce <version> <notes file>: English part (before ---) and German part (after ---)
+          # links to CurseForge, plus the GitHub release when it exists
+          announce() {
+            local v="$1" notes="$2" en de ok=0 linkEn linkDe
+            en=$(awk '/^---[[:space:]]*$/ {exit} {print}' "$notes")
+            de=$(awk 'f {print} /^---[[:space:]]*$/ {f=1}' "$notes")
+            [ -n "$de" ] || de="$en"
+            linkEn="➜ Download on CurseForge: $cfUrl"
+            linkDe="➜ Download auf CurseForge: $cfUrl"
+            if gh release view "v$v" >/dev/null 2>&1; then
+              linkEn="$linkEn"$'\n'"➜ GitHub: <$ghReleaseBase/v$v>"
+              linkDe="$linkDe"$'\n'"➜ GitHub: <$ghReleaseBase/v$v>"
+            fi
+            discord_post "${DISCORD_WEBHOOK_EN:-}" "Run Recap v$v is out!" "$en" "$linkEn" "${DISCORD_ROLE_ID:-}" || ok=1
+            discord_post "${DISCORD_WEBHOOK_DE:-}" "Run Recap v$v ist da!" "$de" "$linkDe" || ok=1
+            return $ok
+          }
+
+          # manual run with "announce": only re-post that version's announcement
+          if [ -n "${ANNOUNCE_ONLY:-}" ]; then
+            if ! [[ "$ANNOUNCE_ONLY" =~ ^[0-9A-Za-z.-]+$ ]] || [ ! -f "releases/notes/$ANNOUNCE_ONLY.md" ]; then
+              echo "::error::no changelog releases/notes/$ANNOUNCE_ONLY.md"; exit 1
+            fi
+            announce "$ANNOUNCE_ONLY" "releases/notes/$ANNOUNCE_ONLY.md" || { echo "::error::Discord announcement failed"; exit 1; }
+            exit 0
+          fi
+
+          while read -r version sha rtype rest; do
+            case "$version" in ""|\#*) continue ;; esac
+            rtype="${rtype:-release}"
+            notes="releases/notes/$version.md"
+            zip="releases/RunRecap-$version.zip"
+            [ -f "$zip" ] || zip="releases/RunRecap-${version%%-*}.zip"
+            if [ ! -f "$zip" ]; then echo "::error::no ZIP for $version in releases/"; exit 1; fi
+            marker="releases/notes/uploaded/$version"
+            fresh=0
+
+            # 1. CurseForge upload (once)
+            if [ ! -f "$marker" ]; then
+              if [ -z "${CF_API_TOKEN:-}" ]; then
+                echo "::error::CF_API_TOKEN secret missing"; exit 1
+              fi
+              if [ -z "$gameVersionId" ]; then
+                curl -sS --fail-with-body -H "X-Api-Token: $CF_API_TOKEN" "$CF_API/game/versions" > /tmp/versions.json
+                matches=$(jq -c --arg v "$CF_GAME_VERSION" '[.[] | select(.name == $v)]' /tmp/versions.json)
+                echo "game versions named $CF_GAME_VERSION: $matches"
+                count=$(echo "$matches" | jq 'length')
+                if [ "$count" -ne 1 ]; then
+                  echo "::error::expected exactly one CurseForge game version named $CF_GAME_VERSION, found $count"
+                  jq -c '[.[] | select(.name | startswith("1.60"))]' /tmp/versions.json
+                  exit 1
+                fi
+                gameVersionId=$(echo "$matches" | jq '.[0].id')
+              fi
+              display="Run Recap v${version}"
+              metadata=$(jq -n --rawfile changelog "$notes" --arg name "$display" --arg type "$rtype" \
+                --argjson gv "$gameVersionId" \
+                '{changelog: $changelog, changelogType: "markdown", displayName: $name, gameVersions: [$gv], releaseType: $type}')
+              echo "uploading $zip to CurseForge as '$display' ($rtype)"
+              curl -sS --fail-with-body -H "X-Api-Token: $CF_API_TOKEN" --form-string "metadata=$metadata" -F "file=@$zip" \
+                "$CF_API/projects/$CF_PROJECT_ID/upload-file" | tee /tmp/upload.json
+              echo
+              # record the upload right away, so a later failure can never upload it twice
+              echo "uploaded by the workflow ($rtype): $(cat /tmp/upload.json)" > "$marker"
+              git add "$marker"
+              git commit -m "Record CurseForge upload of $version [skip ci]"
+              git pull --rebase
+              git push
+              fresh=1
+            else
+              echo "$version already on CurseForge"
+            fi
+
+            # 2. GitHub release (only for real releases)
+            if [ "$rtype" = "release" ]; then
+              if gh release view "v$version" >/dev/null 2>&1; then
+                echo "v$version exists on GitHub"
+              else
+                if ! gh release create "v$version" "$zip" --target "$sha" \
+                  --title "Run Recap v$version" --notes-file "$notes"; then
+                  echo "::error::GitHub release v$version failed - create it by hand"
+                  ghFailed=1
+                fi
+              fi
+
+              # 3. Discord announcement (only right after a fresh upload; never fails the run)
+              if [ "$fresh" = 1 ]; then
+                announce "$version" "$notes" || echo "::warning::Discord announcement for $version failed (upload is fine)"
+              fi
+            fi
+          done < releases/notes/releases.txt
+          exit $ghFailed
+

@@ -1,0 +1,3 @@
+# <version> <commit> [release|beta|alpha]  - only add a line after Felix tested the version
+# and said "go hochladen". Uploads to CurseForge once (marker in uploaded/) and creates the
+# GitHub release for type "release". The ZIP must be releases/RunRecap-<version>.zip.

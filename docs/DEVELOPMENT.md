@@ -133,3 +133,7 @@ Folder `RunRecap/` with all addon files, **without** `.git`, `.github`, `release
 ## Style
 
 Two skins for the recap window (`RunRecapDB.skin`): "blizzard" (default) = Blizzard window templates (`ButtonFrameTemplate` → `BasicFrameTemplateWithInset` → dialog backdrop), `InsetFrameTemplate`, `UIPanelButtonTemplate`, game font; "recap" = dark brown, golden borders, Philosopher/Noto Sans. Options and popups always native, dropdowns look like the game's (dark field, yellow arrow) but open our own popup; the success banner has its own look (Cinzel title, TGA band); fonts via `SetFontObject` only; own popups instead of Blizzard menus; links as copyable edit boxes; no `hooksecurefunc` on Blizzard functions; never touch Blizzard's loot or roll frames, only read events.
+
+## Releases (CurseForge)
+
+`.github/workflows/release.yml` (taken over from BGF) uploads every version listed in `releases/notes/releases.txt` to CurseForge (project 1824577, game version 1.60.1) once, with `releases/notes/<version>.md` as changelog (English, `---`, German), records it in `releases/notes/uploaded/<version>` and creates the GitHub release. Line format: `<version> <commit> [release|beta|alpha]`. The ZIP must be `releases/RunRecap-<version>.zip`. Secret `CF_API_TOKEN` (set). Discord announcements are prepared but skipped until webhook secrets exist. A line is only added after the author tested the version and said to upload it. Every release also needs a page in `Data/News.lua`.
