@@ -608,7 +608,118 @@ function Run.Summary(run, showGreen)
 		end
 	end
 	if s.deaths[1] then s.mostDeaths = s.deaths[1] end
+	s.highlights = Run.Highlights(run, s, lootCount)
 	return s
+end
+
+--[[
+Highlights: every candidate gets a score for how remarkable it is this run (0-100); the four
+best are shown (Felix, 22.11.2026). Equal scores: order of HIGHLIGHT_ORDER. Entries:
+{ key, score, name = player or boss, value = number, extra... } - texts are made in the UI.
+]]
+Run.HIGHLIGHT_ORDER = { "fastest", "hardest", "loot", "deaths", "lucky", "unlucky", "item" }
+Run.HIGHLIGHTS_SHOWN = 4
+
+local function clamp(x) return math.max(0, math.min(100, x)) end
+
+function Run.Highlights(run, s, lootCount)
+	local list = {}
+	local function add(h) list[#list + 1] = h end
+
+	-- fights: fastest and hardest boss
+	local fights, sum = {}, 0
+	for _, kill in ipairs(run.kills) do
+		if kill.fight and kill.fight > 0 then
+			fights[#fights + 1] = kill
+			sum = sum + kill.fight
+		end
+	end
+	local avg = #fights > 0 and sum / #fights or nil
+	if s.fastest and #fights >= 2 then
+		add({ key = "fastest", name = s.fastest.name, value = s.fastest.fight,
+			score = clamp(20 + 80 * math.max(0, 1 - s.fastest.fight / avg)) })
+	end
+	local worst, wipes = nil, 0
+	for _, kill in ipairs(run.kills) do
+		local n = run.bossWipes[kill.key] or 0
+		if n > wipes then worst, wipes = kill, n end
+	end
+	if worst then
+		add({ key = "hardest", name = worst.name, wipes = wipes, score = clamp(50 + 20 * wipes) })
+	elseif #fights >= 2 then
+		local longest = fights[1]
+		for _, kill in ipairs(fights) do if kill.fight > longest.fight then longest = kill end end
+		add({ key = "hardest", name = longest.name, value = longest.fight,
+			score = math.min(70, clamp(15 + 60 * math.max(0, longest.fight / avg - 1))) })
+	end
+
+	-- most loot: a clear lead is remarkable, a tie hardly
+	local first, second = nil, 0
+	for name, n in pairs(lootCount or {}) do
+		if not first or n > first.n or (n == first.n and name < first.name) then
+			if first then second = math.max(second, first.n) end
+			first = { name = name, n = n }
+		else
+			second = math.max(second, n)
+		end
+	end
+	if first then
+		local lead = first.n - second
+		add({ key = "loot", name = first.name, value = first.n, score = lead > 0 and clamp(15 + 20 * lead + 5 * first.n) or 10 })
+	end
+
+	-- most deaths
+	if s.deaths[1] then
+		local d = s.deaths[1]
+		local tied = s.deaths[2] and s.deaths[2].n == d.n
+		add({ key = "deaths", name = d.name, value = d.n, score = clamp(20 + 15 * d.n - (tied and 10 or 0)) })
+	end
+
+	-- rolls: highest roll, and who lost every need roll
+	local best, needs, wins = nil, {}, {}
+	for _, item in ipairs(run.items) do
+		if item.looter then wins[item.looter] = (wins[item.looter] or 0) + 1 end
+		for name, r in pairs(item.rolls or {}) do
+			if r.value and (r.choice == "need" or r.choice == "greed")
+				and (not best or r.value > best.value or (r.value == best.value and name < best.name)) then
+				best = { name = name, value = r.value, choice = r.choice }
+			end
+			if r.choice == "need" and item.looter ~= name then needs[name] = (needs[name] or 0) + 1 end
+		end
+	end
+	if best then
+		local v = best.value
+		local score = v >= 100 and 95 or v >= 99 and 85 or v >= 95 and 65 or v >= 90 and 45 or 20
+		add({ key = "lucky", name = best.name, value = v, choice = best.choice, score = score })
+	end
+	local unlucky
+	for name, n in pairs(needs) do
+		if not wins[name] and (not unlucky or n > unlucky.value or (n == unlucky.value and name < unlucky.name)) then
+			unlucky = { name = name, value = n }
+		end
+	end
+	if unlucky then
+		add({ key = "unlucky", name = unlucky.name, value = unlucky.value, score = clamp(10 + 20 * unlucky.value) })
+	end
+
+	-- best item: epic or better is remarkable, blue hardly
+	local top
+	for _, item in ipairs(run.items) do
+		if (item.quality or 0) >= 3 and (not top or item.quality > top.quality) then top = item end
+	end
+	if top then
+		add({ key = "item", name = top.looter, item = top,
+			score = top.quality >= 5 and 100 or top.quality >= 4 and 85 or 10 })
+	end
+
+	local rank = {}
+	for i, key in ipairs(Run.HIGHLIGHT_ORDER) do rank[key] = i end
+	table.sort(list, function(a, b)
+		if a.score ~= b.score then return a.score > b.score end
+		return rank[a.key] < rank[b.key]
+	end)
+	while #list > Run.HIGHLIGHTS_SHOWN do table.remove(list) end
+	return list
 end
 
 -- The boss marked as "final boss": a fixed end boss, else the last required boss of a wing.

@@ -402,8 +402,12 @@ do
 	ns.db.sound, ns.db.autoOpen = 878, true
 	-- highlights box and skins (preview recap is open)
 	local f2 = ns.Recap.Frame()
-	check("highlights: three tiles for the preview run", f2.Highlights.Tiles[1]:IsShown() and f2.Highlights.Tiles[3]:IsShown()
-		and f2.Highlights.Tiles[1].Value.__text:find("Captain Greenskin", 1, true) ~= nil and not f2.Highlights.Empty:IsShown())
+	local T = f2.Highlights.Tiles
+	check("highlights: the 4 most remarkable of the preview run (hardest, lucky, deaths, fastest)",
+		T[1].key == "hardest" and T[2].key == "lucky" and T[3].key == "deaths" and T[4].key == "fastest"
+		and T[1].Value.__text:find("Mr. Smite", 1, true) ~= nil and T[4]:IsShown() and not f2.Highlights.Empty:IsShown(),
+		tostring(T[1].key) .. "," .. tostring(T[2].key) .. "," .. tostring(T[3].key) .. "," .. tostring(T[4].key))
+	check("facts box sized to its content", (rawget(f2.Facts, "__h") or 0) > 100 and (rawget(f2.Facts, "__h") or 999) < 300)
 	local panel = ns.Options.Panel()
 	ok, err = pcall(panel.SkinDrop.__scripts.OnClick, panel.SkinDrop)
 	check("skin dropdown opens the popup list", ok, err)

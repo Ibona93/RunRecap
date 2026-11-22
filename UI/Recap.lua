@@ -16,16 +16,19 @@ local WIDTH, HEIGHT = 680, 590
 local INSET_W, LEFT_W, RIGHT_W, TOP = 408, 372, 242, 76
 local PORTRAIT = "Interface\\Icons\\INV_Box_02"
 local SKULL = "|TInterface\\TargetingFrame\\UI-TargetingFrame-Skull:12:12:0:0|t "
-local HIGHLIGHT_H = 172
 -- one window per skin ("blizzard", "recap"); the locals below point to the active one
 local windows = {}
 local frame, scroll, content, pools, used, facts
 local hovered            -- widget under the mouse (Shift changes its tooltip)
 local HL_ICONS = {
 	fastest = "Interface\\Icons\\INV_Misc_PocketWatch_01",
+	hardest = "Interface\\Icons\\Ability_Warrior_ShieldBreak",
 	loot = "Interface\\Icons\\INV_Box_02",
 	deaths = "Interface\\Icons\\INV_Misc_Bone_HumanSkull_01",
+	lucky = "Interface\\Icons\\INV_Misc_Coin_01",
+	unlucky = "Interface\\Icons\\Spell_Shadow_GatherShadows",
 }
+local RIGHT_H = HEIGHT - 76 - 28   -- facts + gap + highlights
 
 local function L() return ns.L end
 
@@ -363,25 +366,56 @@ local function renderFacts(run, s)
 		facts[j].Value:Hide()
 	end
 
-	-- highlights: own box, one tile per highlight (icon, grey label, white value)
-	local list = {}
-	if s.fastest then
-		list[#list + 1] = { HL_ICONS.fastest, l.HL_FASTEST, (s.fastest.name or "?") .. " · " .. ns.Parse.Clock(s.fastest.fight) }
-	end
-	if s.mostLoot then
-		list[#list + 1] = { HL_ICONS.loot, l.HL_MOST_LOOT, playerName(run, s.mostLoot.name) .. " · " .. s.mostLoot.n }
-	end
-	if s.mostDeaths then
-		list[#list + 1] = { HL_ICONS.deaths, l.HL_MOST_DEATHS, playerName(run, s.mostDeaths.name) .. " · " .. s.mostDeaths.n }
-	end
+	-- the facts box is as tall as its content; the highlights box gets the rest
+	local factsH = math.min(RIGHT_H - 150, -y + 4)
+	box:SetHeight(factsH)
 	local hl = frame.Highlights
+	hl:SetHeight(RIGHT_H - factsH - 6)
+	Recap.RenderHighlights(run, s, RIGHT_H - factsH - 6)
+end
+
+-- Text for one highlight entry (Run.Highlights): label, value line, icon.
+function Recap.HighlightText(run, h)
+	local l = L()
+	local clock = ns.Parse.Clock
+	if h.key == "fastest" then
+		return l.HL_FASTEST, (h.name or "?") .. " · " .. clock(h.value), HL_ICONS.fastest
+	elseif h.key == "hardest" then
+		local v = h.wipes and (h.wipes .. " " .. l.FACT_WIPES) or clock(h.value)
+		return l.HL_HARDEST, (h.name or "?") .. " · " .. v, HL_ICONS.hardest
+	elseif h.key == "loot" then
+		return l.HL_MOST_LOOT, playerName(run, h.name) .. " · " .. h.value, HL_ICONS.loot
+	elseif h.key == "deaths" then
+		return l.HL_MOST_DEATHS, playerName(run, h.name) .. " · " .. h.value, HL_ICONS.deaths
+	elseif h.key == "lucky" then
+		return l.HL_LUCKY, playerName(run, h.name) .. " · " .. choiceText(h.choice, h.value), HL_ICONS.lucky
+	elseif h.key == "unlucky" then
+		return l.HL_UNLUCKY, playerName(run, h.name) .. " · " .. h.value .. "× " .. l.ROLL_NEED, HL_ICONS.unlucky
+	elseif h.key == "item" then
+		local item = h.item
+		local name = "|c" .. W.QualityHex(item.quality) .. "[" .. (ns.Parse.ItemName(item.link) or "?") .. "]|r"
+		return l.HL_BEST_ITEM, name .. (item.looter and (" · " .. playerName(run, item.looter)) or ""), itemIcon(item.itemID)
+	end
+	return "?", "", nil
+end
+
+-- Up to four tiles, spread evenly over the box height.
+function Recap.RenderHighlights(run, s, boxH)
+	local hl = frame.Highlights
+	local list = s.highlights or {}
+	local step = math.max(40, math.min(58, ((boxH or 170) - 34) / 4))
 	for k, tile in ipairs(hl.Tiles) do
 		local h = list[k]
 		tile:SetShown(h ~= nil)
+		tile:ClearAllPoints()
+		tile:SetPoint("TOPLEFT", hl, "TOPLEFT", 10, -30 - (k - 1) * step)
+		tile:SetPoint("RIGHT", hl, "RIGHT", -10, 0)
 		if h then
-			tile.Icon:SetTexture(h[1])
-			tile.Label:SetText(h[2])
-			tile.Value:SetText(h[3])
+			local label, value, icon = Recap.HighlightText(run, h)
+			tile.Icon:SetTexture(icon or "Interface\\Icons\\INV_Misc_QuestionMark")
+			tile.Label:SetText(label)
+			tile.Value:SetText(value)
+			tile.key = h.key
 		end
 	end
 	hl.Empty:SetShown(#list == 0)
@@ -550,19 +584,20 @@ local function create(skin)
 	frame.Highlights = W.SkinInset(frame, skin)
 	frame.Highlights:SetPoint("BOTTOMRIGHT", -10, 28)
 	frame.Highlights:SetPoint("BOTTOMLEFT", left, "BOTTOMRIGHT", 6, 0)
-	frame.Highlights:SetHeight(HIGHLIGHT_H)
+	frame.Highlights:SetHeight(RIGHT_H - 300 - 6)
 	frame.Highlights.Header = W.Text(frame.Highlights, ns.Fonts.Heading(13), W.GOLD)
 	frame.Highlights.Header:SetPoint("TOPLEFT", 12, -9)
 	frame.Highlights.Header:SetText(l.FACT_HIGHLIGHTS)
 	frame.Highlights.Tiles = {}
-	for k = 1, 3 do frame.Highlights.Tiles[k] = newTile(frame.Highlights, k) end
+	for k = 1, 4 do frame.Highlights.Tiles[k] = newTile(frame.Highlights, k) end
 	frame.Highlights.Empty = W.Text(frame.Highlights, ns.Fonts.Text(11), W.GREY)
 	frame.Highlights.Empty:SetPoint("TOPLEFT", 12, -32)
 	frame.Highlights.Empty:SetText(l.NO_HIGHLIGHTS)
 
 	frame.Facts = W.SkinInset(frame, skin)
 	frame.Facts:SetPoint("TOPLEFT", left, "TOPRIGHT", 6, 0)
-	frame.Facts:SetPoint("BOTTOMRIGHT", frame.Highlights, "TOPRIGHT", 0, 6)
+	frame.Facts:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -10, -TOP)
+	frame.Facts:SetHeight(300)
 	frame.Facts.Header = W.Text(frame.Facts, ns.Fonts.Heading(13), W.GOLD)
 	frame.Facts.Header:SetPoint("TOPLEFT", 12, -9)
 	frame.Facts.Header:SetText(l.RUN_FACTS)

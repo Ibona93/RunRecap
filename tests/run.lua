@@ -417,6 +417,31 @@ do
 	check("Deadmines: Van Cleef completes it; progress 2/6", dm.completed and dm.kills[2].final and d == 2 and t == 6)
 	R.OnEncounterEnd(dm, 99999, "Unbekannt", 1)
 	check("unknown encounter is listed, but changes nothing", #dm.kills == 3 and dm.kills[3].opt)
+
+	-- highlights: scores pick the 4 most remarkable
+	local hr = { kills = {
+			{ key = "A", name = "A", fight = 10 }, { key = "B", name = "B", fight = 60 }, { key = "C", name = "C", fight = 50 },
+		}, bossWipes = { B = 3 }, items = {
+			{ quality = 4, looter = "Kesh", link = "x", rolls = { Kesh = { choice = "need", value = 100 }, Bram = { choice = "need", value = 40 } } },
+			{ quality = 3, looter = "Kesh", link = "y", rolls = { Kesh = { choice = "need", value = 50 }, Bram = { choice = "need", value = 20 } } },
+			{ quality = 3, looter = "Lyss", link = "z", rolls = { Bram = { choice = "need", value = 10 }, Lyss = { choice = "need", value = 30 } } },
+		}, deaths = {}, players = {} }
+	local hs = { fastest = hr.kills[1], deaths = {} }
+	local list = R.Highlights(hr, hs, { Kesh = 2, Lyss = 1 })
+	local keys = {}
+	for k, h in ipairs(list) do keys[k] = h.key end
+	check("highlights: max. 4, sorted by score (hardest 3 wipes, lucky 100, item epic, fastest)",
+		#list == 4 and keys[1] == "hardest" and keys[2] == "lucky" and keys[3] == "item" and keys[4] == "fastest", table.concat(keys, ","))
+	check("highlights: unlucky Bram (3x need, no win) scores 70 but is 5th", (function()
+		R.HIGHLIGHTS_SHOWN = 10
+		local all = R.Highlights(hr, hs, { Kesh = 2, Lyss = 1 })
+		R.HIGHLIGHTS_SHOWN = 4
+		for _, h in ipairs(all) do if h.key == "unlucky" then return h.name == "Bram" and h.value == 3 and h.score == 70 end end
+	end)())
+	check("highlights: a tie for most loot hardly counts", (function()
+		for _, h in ipairs(R.Highlights(hr, hs, { Kesh = 1, Lyss = 1 })) do if h.key == "loot" then return false end end
+		return true
+	end)())
 	R.onComplete = nil
 end
 

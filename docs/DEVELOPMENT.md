@@ -65,6 +65,8 @@ Loot source, in this order: own loot window (`GetLootSourceInfo` → NPC → bos
 
 Deaths: `UnitIsDeadOrGhost` on `player`/`party1-4` at `PLAYER_DEAD`, `UNIT_HEALTH`, `UNIT_FLAGS`, counted once per dying (`run.deadNow`), feign death ignored. Deaths during an encounter are listed at that boss.
 
+Highlights (`Run.Highlights`): candidates fastest boss, toughest boss (most wipes, else longest fight), most loot, most deaths, luckiest roll, unlucky (need rolls, never won), best item; each gets a 0-100 score for how remarkable it is, the 4 best are shown (ties: that order). The facts box is as tall as its content, the highlights box takes the rest.
+
 `/recap demo` shows the success moment with a made-up Deadmines run (`UI/Demo.lua`); nothing is saved.
 
 ## Dungeon data
