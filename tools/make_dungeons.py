@@ -118,7 +118,7 @@ fdun(2998, "Excavation Site: Wetlands", [("Saltspine", 3480), ("Shadetooth", 348
 fdun(2959, "City of Dalaran", [("ArcaneAnomaly", 3298), ("FelAncient", 3299), ("ManaDevourer", 3300), ("ManaElemental", 3301), ("UnstableSentinel", 3302), ("ShadeOfTheArchmage", 3303), ("LynTheIgnored", 3310), ("Atrexis", 3311), ("ManaWraith", 3312)], "ShadeOfTheArchmage", optional=("LynTheIgnored",))
 fdun(2970, "The Drowned City", [("ZulAlai", 3474), ("VarTaka", 3475), ("CaptainDreadrise", 3476), ("DeathlessGuardians", 3478), ("PrimevalElemental", 3511), ("Minloth", 3479)], "Minloth", optional=("PrimevalElemental",))
 fdun(3039, "Krol'dok Stronghold", [("SlavecrusherGrox", 3450), ("TwilightCommanderZarmok", 3452), ("HandlerAshka", 3453), ("Nargurk", 3449), ("OverseerMugg", 3451)], "OverseerMugg")
-# Order from the client data; final Blazeroar (last in order, Felix agrees, 22.11.2026 - watch the first run).
+# Order from the client data; final Blazeroar (last in order, confirmed by Felix, 22.11.2026).
 fdun(2994, "Alcaz Prison", [("OverseerWrex", 3403), ("TidemistressCazass", 3410), ("KaterinaTheCleaner", 3418), ("TheQuestioner", 3415), ("Blazeroar", 3409)], "Blazeroar")
 fdun(2974, "Blackmaw Hold", [("Withermaw", 3315), ("Impaan", 3316), ("Bloodmane", 3327), ("Bonesnout", 3322), ("Varrox", 3334), ("BlackmawBehemoth", 3323), ("UnboundSpirit", 3336)], "Varrox")
 fdun(3001, "Shaper's Terrace", [("Titanosaur", 3498), ("RavasaurHunters", 3499), ("Thunderhoof", 3500), ("Venomridge", 3501), ("DirehornMatriarch", 3507), ("Cinder", 3503), ("KingOp", 3504), ("Snowtalon", 3597), ("Bolt", 3505), ("Vitrix", 3600), ("Nanaya", 3502)], "Nanaya")
