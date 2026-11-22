@@ -442,6 +442,41 @@ do
 		for _, h in ipairs(R.Highlights(hr, hs, { Kesh = 1, Lyss = 1 })) do if h.key == "loot" then return false end end
 		return true
 	end)())
+
+	-- money: vendor value of own loot (not need-won items), repair costs, balance
+	clock = 50000
+	local mr = R.OnZone({ inInstance = true, instanceType = "party", mapID = 389, name = "Ragefireabgrund" })
+	local prices = { [1179] = 6, [272999] = 5000, [5498] = 100 }
+	ns.SellPrice = function(link) return prices[ns.Parse.ItemID(link)] or 0 end
+	R.OnLoot(mr, ns.Parse.Loot("Ihr erhaltet Beute: " .. MILCH .. "x3"), "Ibona Hexfang")
+	check("vendor value: white loot counts (3 x 6)", mr.vendor == 18)
+	R.OnLoot(mr, ns.Parse.Loot("Albona Lichtwirker bekommt Beute: " .. PERLE .. "."), "Albona Lichtwirker")
+	check("vendor value: loot of others does not count", mr.vendor == 18)
+	R.OnRollStart(mr, 77, ARMBRUST)
+	R.OnRoll(mr, ns.Parse.Roll(H(77) .. "Ihr habt \"Bedarf\" ausgewählt für: " .. ARMBRUST), "Ibona Hexfang")
+	R.OnRoll(mr, ns.Parse.Roll(H(77) .. "Gewonnen von Euch: " .. ARMBRUST), "Ibona Hexfang")
+	R.OnLoot(mr, ns.Parse.Loot("Ihr erhaltet Beute: " .. ARMBRUST), "Ibona Hexfang")
+	check("vendor value: item won with need does not count", mr.vendor == 18)
+	R.OnRollStart(mr, 78, PERLE)
+	R.OnRoll(mr, ns.Parse.Roll(H(78) .. "Ihr habt \"Gier\" ausgewählt für: " .. PERLE), "Ibona Hexfang")
+	R.OnRoll(mr, ns.Parse.Roll(H(78) .. "Gewonnen von Euch: " .. PERLE), "Ibona Hexfang")
+	R.OnLoot(mr, ns.Parse.Loot("Ihr erhaltet Beute: " .. PERLE), "Ibona Hexfang")
+	check("vendor value: item won with greed counts", mr.vendor == 118)
+	R.OnRepairSample(mr, 500)
+	R.OnRepairSample(mr, 900)
+	R.OnRepairSample(mr, 1400, true)
+	R.OnRepairSample(mr, 1600)
+	check("repairs: only increases count, gear change only moves the base", mr.repair == 600)
+	R.Pause(mr)
+	R.OnRepairSample(mr, 0)
+	R.Resume(mr)
+	R.OnRepairSample(mr, 300)
+	check("repaired at a vendor while outside: new base, nothing lost", mr.repair == 900)
+	R.OnMoney(mr, 1000)
+	local ms = R.Summary(mr, true)
+	check("balance = gold + vendor value - repairs", ms.money == 1000 and ms.vendor == 118 and ms.repair == 900 and ms.balance == 218)
+	ns.SellPrice = nil
+	R.End("test")
 	R.onComplete = nil
 end
 

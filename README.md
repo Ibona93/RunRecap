@@ -59,7 +59,7 @@ Bug reports and ideas: [GitHub Issues](https://github.com/Ibona93/RunRecap/issue
 ## 6. Changelog
 
 ### 0.1.0 (in testing)
-- First version: recap after the last boss with bosses (minute in the run, fight duration, end boss), loot per boss with the looter in class colour, a "Trash" section and run facts (duration, bosses, wipes, gold, deaths, highlights).
+- First version: recap after the last boss with bosses (minute in the run, fight duration, end boss), loot per boss with the looter in class colour, a "Trash" section and run facts (duration, bosses, wipes, your gold, vendor value of your loot, repair costs and balance, deaths, highlights).
 - Success moment: sound and "Dungeon completed!" banner, then the recap.
 - Rolls: who won, and with Shift every roll.
 - All 28 dungeons, including the 9 new Forever dungeons (wings for Scarlet Monastery, Dire Maul, Stratholme and Blackrock Spire).

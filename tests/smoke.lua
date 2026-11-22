@@ -409,7 +409,10 @@ do
 		tostring(T[1].key) .. "," .. tostring(T[2].key) .. "," .. tostring(T[3].key) .. "," .. tostring(T[4].key))
 	check("singular/plural: 1 Wipe, 3 Wipes, 0 Wipes", ns.WipesText(1) == "1 Wipe" and ns.WipesText(3) == "3 Wipes" and ns.WipesText(0) == "0 Wipes"
 		and T[1].Value.__text:find("1 Wipe", 1, true) ~= nil and not T[1].Value.__text:find("1 Wipes", 1, true))
-	check("highlight cards fill their slot", (rawget(T[1], "__h") or 0) >= 38)
+	check("highlights: compact rows", (rawget(T[1], "__h") or 0) >= 30 and (rawget(T[1], "__h") or 99) <= 36)
+	local lines = table.concat(ns.Recap.FactLines(), "\n")
+	check("facts: gold, vendor value, repairs, balance", lines:find("Händlerwert|+ 2", 1, true) ~= nil
+		and lines:find("Reparatur|− 1", 1, true) ~= nil and lines:find("Bilanz|5", 1, true) ~= nil, lines)
 	check("facts box sized to its content", (rawget(f2.Facts, "__h") or 0) > 100 and (rawget(f2.Facts, "__h") or 999) < 300)
 	local panel = ns.Options.Panel()
 	ok, err = pcall(panel.SkinDrop.__scripts.OnClick, panel.SkinDrop)

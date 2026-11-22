@@ -19,6 +19,7 @@ W.GREY = { 0.62, 0.62, 0.62 }
 W.DARKGREY = { 0.45, 0.45, 0.45 }
 W.GREEN = { 0.25, 1, 0.25 }
 W.YELLOW = { 1, 0.85, 0.2 }
+W.RED = { 1, 0.3, 0.25 }
 W.BORDER = { 0.6, 0.48, 0.25 }
 W.SKINS = { "blizzard", "recap" }
 

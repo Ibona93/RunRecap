@@ -29,6 +29,7 @@ local HL_ICONS = {
 	unlucky = "Interface\\Icons\\Spell_Shadow_GatherShadows",
 }
 local RIGHT_H = HEIGHT - 76 - 28   -- facts + gap + highlights
+local HL_H = 30 + 4 * 37 + 6       -- highlights box: header + 4 compact rows
 
 local function L() return ns.L end
 
@@ -340,17 +341,29 @@ local function renderFacts(run, s)
 		y = y - math.max(f.Label:GetStringHeight() or 14, 14) - (opts.gap or 6)
 	end
 
-	row(l.FACT_DURATION, ns.Parse.Clock(s.duration))
-	row(l.FACT_BOSSES, ("%d/%d"):format(s.done, s.total), s.done >= s.total and W.GREEN or W.YELLOW)
-	row(l.FACT_WIPES, tostring(s.wipes), s.wipes == 0 and W.GREEN or W.YELLOW)
-	row(l.FACT_GOLD, ns.Parse.Coins(s.money))
+	local function separator(line)
+		y = y - 3
+		line:ClearAllPoints()
+		line:SetPoint("TOPLEFT", box, "TOPLEFT", 10, y)
+		line:SetPoint("TOPRIGHT", box, "TOPRIGHT", -10, y)
+		y = y - 8
+	end
+	local coins = ns.Parse.Coins
 
-	-- deaths, below a thin separator
-	y = y - 4
-	box.Separator:ClearAllPoints()
-	box.Separator:SetPoint("TOPLEFT", box, "TOPLEFT", 10, y)
-	box.Separator:SetPoint("TOPRIGHT", box, "TOPRIGHT", -10, y)
-	y = y - 9
+	row(l.FACT_DURATION, ns.Parse.Clock(s.duration), nil, { gap = 4 })
+	row(l.FACT_BOSSES, ("%d/%d"):format(s.done, s.total), s.done >= s.total and W.GREEN or W.YELLOW, { gap = 4 })
+	row(l.FACT_WIPES, tostring(s.wipes), s.wipes == 0 and W.GREEN or W.YELLOW, { gap = 4 })
+
+	-- money: own looted gold + vendor value of own loot - repair costs = balance
+	separator(box.Separator)
+	row(l.FACT_GOLD, "+ " .. coins(s.money), nil, { gap = 4 })
+	row(l.FACT_VENDOR, "+ " .. coins(s.vendor), nil, { gap = 4 })
+	row(l.FACT_REPAIR, (s.repair > 0 and "− " or "") .. coins(s.repair), nil, { gap = 4 })
+	row(l.FACT_BALANCE, (s.balance < 0 and "− " or "") .. coins(math.abs(s.balance)),
+		s.balance > 0 and W.GREEN or s.balance < 0 and W.RED or { 1, 1, 1 }, { gap = 4 })
+
+	-- deaths
+	separator(box.Separator2)
 	row(l.FACT_DEATHS, "")
 	if #s.deaths == 0 and #s.noDeaths == 0 then
 		row(l.NO_DEATHS, "", nil, { labelColor = W.GREY })
@@ -367,7 +380,7 @@ local function renderFacts(run, s)
 	end
 
 	-- the facts box is as tall as its content; the highlights box gets the rest
-	local factsH = math.min(RIGHT_H - 150, -y + 4)
+	local factsH = math.min(RIGHT_H - 170, math.max(RIGHT_H - HL_H - 6, -y + 4))
 	box:SetHeight(factsH)
 	local hl = frame.Highlights
 	hl:SetHeight(RIGHT_H - factsH - 6)
@@ -399,11 +412,11 @@ function Recap.HighlightText(run, h)
 	return "?", "", nil
 end
 
--- Up to four tiles filling the box: each card as tall as its slot, 4 px apart.
+-- Up to four compact rows, spread over the box.
 function Recap.RenderHighlights(run, s, boxH)
 	local hl = frame.Highlights
 	local list = s.highlights or {}
-	local step = math.max(42, math.min(64, ((boxH or 170) - 36) / 4))
+	local step = math.max(34, math.min(40, ((boxH or HL_H) - 34) / 4))
 	for k, tile in ipairs(hl.Tiles) do
 		local h = list[k]
 		tile:SetShown(h ~= nil)
@@ -504,22 +517,15 @@ local function savePosition()
 	ns.db.window = { point = point, relPoint = relPoint, x = x, y = y }
 end
 
--- A highlight tile: a slightly lighter card filling its slot, icon and two lines centred.
-local function newTile(parent, index, skin)
+-- A highlight row: icon, grey label above, white value below (compact, no background).
+local function newTile(parent, index)
 	local t = CreateFrame("Frame", nil, parent)
 	t:SetHeight(42)
 	t:SetPoint("TOPLEFT", 8, -30 - (index - 1) * 46)
 	t:SetPoint("RIGHT", parent, "RIGHT", -8, 0)
-	t.Bg = t:CreateTexture(nil, "BACKGROUND", nil, 1)
-	t.Bg:SetAllPoints()
-	if skin == "recap" then
-		t.Bg:SetColorTexture(0.6, 0.45, 0.2, 0.1)
-	else
-		t.Bg:SetColorTexture(1, 1, 1, 0.05)
-	end
 	t.Icon = t:CreateTexture(nil, "ARTWORK")
-	t.Icon:SetSize(34, 34)
-	t.Icon:SetPoint("LEFT", 6, 0)
+	t.Icon:SetSize(30, 30)
+	t.Icon:SetPoint("LEFT", 4, 0)
 	t.Icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 	t.Label = W.Text(t, ns.Fonts.Text(11), W.GREY)
 	t.Label:SetPoint("BOTTOMLEFT", t.Icon, "RIGHT", 8, 1)
@@ -598,7 +604,7 @@ local function create(skin)
 	frame.Highlights.Header:SetPoint("TOPLEFT", 12, -9)
 	frame.Highlights.Header:SetText(l.FACT_HIGHLIGHTS)
 	frame.Highlights.Tiles = {}
-	for k = 1, 4 do frame.Highlights.Tiles[k] = newTile(frame.Highlights, k, skin) end
+	for k = 1, 4 do frame.Highlights.Tiles[k] = newTile(frame.Highlights, k) end
 	frame.Highlights.Empty = W.Text(frame.Highlights, ns.Fonts.Text(11), W.GREY)
 	frame.Highlights.Empty:SetPoint("TOPLEFT", 12, -32)
 	frame.Highlights.Empty:SetText(l.NO_HIGHLIGHTS)
@@ -611,6 +617,7 @@ local function create(skin)
 	frame.Facts.Header:SetPoint("TOPLEFT", 12, -9)
 	frame.Facts.Header:SetText(l.RUN_FACTS)
 	frame.Facts.Separator = W.Separator(frame.Facts, skin)
+	frame.Facts.Separator2 = W.Separator(frame.Facts, skin)
 
 	frame.Hint = W.Text(frame, ns.Fonts.Text(11), W.GREEN)
 	frame.Hint:SetPoint("BOTTOMLEFT", 16, 9)
@@ -698,6 +705,15 @@ end
 
 function Recap.IsShown() return frame and frame:IsShown() or false end
 function Recap.Frame() return frame end
+
+-- Shown fact rows as "label|value" (tests).
+function Recap.FactLines()
+	local out = {}
+	for _, f in ipairs(facts or {}) do
+		if f.Label:IsShown() then out[#out + 1] = tostring(f.Label:GetText()) .. "|" .. tostring(f.Value:GetText()) end
+	end
+	return out
+end
 
 -- Skin changed in the options: show the open recap in the new skin.
 function Recap.ApplySkin()

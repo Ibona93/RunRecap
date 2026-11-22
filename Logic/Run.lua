@@ -80,7 +80,9 @@ function Run.New(mapID, name, now)
 		wipes = 0, bossWipes = {}, bossDeaths = {},
 		items = {},          -- { link, itemID, quality, count, looter, source (kill index | "trash"), sure, rolls, ... }
 		deaths = {}, deadNow = {}, players = {},
-		money = 0,
+		money = 0,          -- own share of looted gold (copper)
+		vendor = 0,         -- vendor value of own loot, without items won with need (copper)
+		repair = 0,         -- own repair costs that came up during the run (copper)
 	}
 	d.currentRun = run
 	ns.Debug("run started: " .. tostring(name) .. " (" .. tostring(mapID) .. ")")
@@ -488,6 +490,16 @@ end
 (from the GUID) or nil. Belongs to a finished roll for the same item if there is one;
 otherwise a new item with a source by the rules above.
 ]]
+-- Vendor value of own loot (Felix, 22.11.2026): everything looted, grey and white included,
+-- but not items won with a need roll. ns.SellPrice(link) -> copper per piece (Core).
+local function addVendorValue(run, l, rolled, me)
+	if not l.self or not ns.SellPrice then return end
+	local mine = rolled and rolled.rolls and me and rolled.rolls[me]
+	if mine and mine.choice == "need" then return end
+	local price = ns.SellPrice(l.link) or 0
+	if price > 0 then run.vendor = (run.vendor or 0) + price * (l.count or 1) end
+end
+
 function Run.OnLoot(run, l, who, class, now)
 	if not run or run.state ~= "active" or not l or not who then return end
 	now = now or ns.Now()
@@ -500,10 +512,12 @@ function Run.OnLoot(run, l, who, class, now)
 			item.claimed = true
 			item.looter = who
 			item.rolling = nil
+			addVendorValue(run, l, item, who)
 			changed(run)
 			return item
 		end
 	end
+	addVendorValue(run, l, nil, who)
 	local item = newItem(run, l.link, now)
 	if not item then return nil end
 	item.count = l.count or 1
@@ -525,6 +539,23 @@ function Run.OnLoot(run, l, who, class, now)
 	end
 	changed(run)
 	return item
+end
+
+--[[
+Repair costs: `cost` = current repair cost of the equipped gear (Core reads it from the item
+tooltips). Only increases while the run is active count; a lower value (repaired, e.g. on a
+hearthstone trip to a vendor) just becomes the new base. resetBase: gear was changed, take the
+value as the new base without counting.
+]]
+function Run.OnRepairSample(run, cost, resetBase)
+	if not run or not cost then return end
+	local last = run.repairLast
+	run.repairLast = cost
+	if resetBase or not last or run.state ~= "active" then return end
+	if cost > last then
+		run.repair = (run.repair or 0) + (cost - last)
+		changed(run)
+	end
 end
 
 function Run.OnMoney(run, copper)
@@ -590,6 +621,9 @@ function Run.Summary(run, showGreen)
 	s.done, s.total = Run.BossProgress(run)
 	s.wipes = run.wipes or 0
 	s.money = run.money or 0
+	s.vendor = run.vendor or 0
+	s.repair = run.repair or 0
+	s.balance = s.money + s.vendor - s.repair
 
 	s.deaths, s.noDeaths = {}, {}
 	for name, n in pairs(run.deaths) do s.deaths[#s.deaths + 1] = { name = name, n = n } end

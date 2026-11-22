@@ -39,7 +39,7 @@ function Demo.Run()
 		wipes = 1, bossWipes = { MrSmite = 1 }, bossDeaths = { MrSmite = { "Mirela", "Kesh" } },
 		deaths = { Mirela = 2, Kesh = 1 }, deadNow = {},
 		players = { Kesh = "ROGUE", Mirela = "PRIEST", Thorgar = "WARRIOR", Lyss = "MAGE", Bram = "HUNTER" },
-		money = 41387,
+		money = 41387, vendor = 23510, repair = 12040,
 		items = {
 			item(5187, 3, "Rhahk'Zor's Hammer", "Thorgar", 1, true,
 				{ historyID = 1, rolls = { Thorgar = { choice = "need", value = 64 }, Kesh = { choice = "greed", value = 90 } } }),

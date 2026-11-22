@@ -69,6 +69,47 @@ function ns.ItemQualityFallback(link)
 	return nil
 end
 
+-- Vendor price of one piece (copper); 0 if unknown or unsellable.
+function ns.SellPrice(link)
+	if not link then return 0 end
+	local info = { ns.TryCall(GetItemInfo, link) }
+	if C_Item and C_Item.GetItemInfo and info[1] == nil then info = { ns.TryCall(C_Item.GetItemInfo, link) } end
+	return tonumber(info[11]) or 0
+end
+
+-- Current repair cost of the equipped gear (copper), from the item tooltips - works anywhere,
+-- not only at a vendor. nil if the client can't tell.
+local scanTip
+function ns.RepairCost()
+	local total, known = 0, false
+	for slot = 1, 19 do
+		local cost
+		if C_TooltipInfo and C_TooltipInfo.GetInventoryItem then
+			local data = ns.TryCall(C_TooltipInfo.GetInventoryItem, "player", slot)
+			if type(data) == "table" then cost = data.repairCost end
+		end
+		if cost == nil and CreateFrame then
+			if not scanTip then
+				scanTip = CreateFrame("GameTooltip", "RunRecapScanTooltip", nil, "GameTooltipTemplate")
+			end
+			scanTip:SetOwner(UIParent, "ANCHOR_NONE")
+			local ok, _, _, c = pcall(scanTip.SetInventoryItem, scanTip, "player", slot)
+			if ok then cost = c end
+			scanTip:Hide()
+		end
+		if type(cost) == "number" then
+			total = total + cost
+			known = true
+		end
+	end
+	return known and total or nil
+end
+
+local function sampleRepair(resetBase)
+	local run = ns.Run.Current()
+	if run then ns.Run.OnRepairSample(run, ns.RepairCost(), resetBase) end
+end
+
 local function classOfGUID(guid)
 	if type(guid) ~= "string" or not GetPlayerInfoByGUID then return nil end
 	local _, class = ns.TryCall(GetPlayerInfoByGUID, guid)
@@ -181,12 +222,19 @@ function handlers.PLAYER_ENTERING_WORLD(isLogin, isReload)
 	if isLogin or isReload then ns.Run.OnLogin() end
 	ns.Run.OnZone(zoneInfo())
 	updateRoster()
+	sampleRepair()
 end
 
 function handlers.ZONE_CHANGED_NEW_AREA()
 	ns.Run.OnZone(zoneInfo())
 	updateRoster()
+	sampleRepair()
 end
+
+-- repair costs: durability changes count, gear changes and repairs only move the base
+function handlers.UPDATE_INVENTORY_DURABILITY() sampleRepair() end
+function handlers.PLAYER_EQUIPMENT_CHANGED() sampleRepair(true) end
+function handlers.MERCHANT_CLOSED() sampleRepair() end
 
 function handlers.GROUP_ROSTER_UPDATE() updateRoster() end
 
@@ -196,6 +244,7 @@ end
 
 function handlers.ENCOUNTER_END(id, name, _, _, success)
 	ns.Run.OnEncounterEnd(ns.Run.Current(), id, name, success)
+	sampleRepair()
 end
 
 function handlers.CHAT_MSG_LOOT(msg, sender, _, _, _, _, _, _, _, _, _, guid)
@@ -223,12 +272,16 @@ end
 
 handlers.LOOT_OPENED = lootWindow
 
-function handlers.PLAYER_DEAD() checkUnit("player") end
+function handlers.PLAYER_DEAD()
+	checkUnit("player")
+	sampleRepair()
+end
 function handlers.UNIT_HEALTH(unit) checkUnit(unit) end
 handlers.UNIT_FLAGS = handlers.UNIT_HEALTH
 
 local function aliveAgain()
 	checkUnit("player")
+	sampleRepair()
 	local info = zoneInfo()
 	local run = ns.Run.Current()
 	if run and not info.dead and not (info.inInstance and info.mapID == run.mapID) then
