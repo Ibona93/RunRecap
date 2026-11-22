@@ -146,7 +146,7 @@ do
 	local _, _, stocks = D.FindEncounter(2760)
 	check("Stockade (no fixed end boss): 4 of 5 is not complete", not D.WingProgress(stocks,
 		{ Targorr = true, KamDeepfury = true, Hamhock = true, BazilThredd = true }))
-	check("unconfirmed final bosses are marked (Ruins, Alcaz), confirmed ones not", ns.DUNGEONS[2999].verified == false and ns.DUNGEONS[2994].verified == false and ns.DUNGEONS[3065].verified == nil and ns.DUNGEONS[2974].wings[1].bosses[5].final == true)
+	check("Forever final bosses: Rath'mael, Blazeroar, Varrox", select(4, D.FindEncounter(3354)).final and select(4, D.FindEncounter(3409)).final and select(4, D.FindEncounter(3334)).final and not select(4, D.FindEncounter(3336)).final)
 end
 
 print(("\n%d passed, %d failed"):format(passed, failed))

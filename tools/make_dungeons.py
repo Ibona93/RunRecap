@@ -112,14 +112,14 @@ def fdun(map_id, name, bosses, final_key, optional=(), verified=True):
     dungeon(map_id, name, [("main", [b(k, [i], [], req=(k not in optional), final=(k == final_key)) for k, i in bosses])],
             verified=verified)
 fdun(3065, "Hall of Thanes", [("FaldrimAnvilmar", 3493), ("Infurnus", 3495), ("Plunder", 3494), ("DurgenDirgehammer", 3496)], "DurgenDirgehammer")
-# Non-linear ruins; Viktor is summoned (optional). Rath'mael "the last position worth defending" - final is a guess.
-fdun(2999, "Ruins of Lordaeron", [("Witherfang", 3353), ("TheAbandoned", 3357), ("TheButcher", 3355), ("Rathmael", 3354), ("LordaeronCaptain", 3408), ("ViktorTheVile", 3411), ("Bjork", 3412)], "Rathmael", optional=("ViktorTheVile",), verified=False)
+# Non-linear ruins; Viktor is summoned (optional). Final boss Rath'mael (confirmed by Felix, 22.11.2026).
+fdun(2999, "Ruins of Lordaeron", [("Witherfang", 3353), ("TheAbandoned", 3357), ("TheButcher", 3355), ("Rathmael", 3354), ("LordaeronCaptain", 3408), ("ViktorTheVile", 3411), ("Bjork", 3412)], "Rathmael", optional=("ViktorTheVile",))
 fdun(2998, "Excavation Site: Wetlands", [("Saltspine", 3480), ("Shadetooth", 3481), ("HighlandHorror", 3644), ("RelicGuardian", 3482)], "RelicGuardian", optional=("HighlandHorror",))
 fdun(2959, "City of Dalaran", [("ArcaneAnomaly", 3298), ("FelAncient", 3299), ("ManaDevourer", 3300), ("ManaElemental", 3301), ("UnstableSentinel", 3302), ("ShadeOfTheArchmage", 3303), ("LynTheIgnored", 3310), ("Atrexis", 3311), ("ManaWraith", 3312)], "ShadeOfTheArchmage", optional=("LynTheIgnored",))
 fdun(2970, "The Drowned City", [("ZulAlai", 3474), ("VarTaka", 3475), ("CaptainDreadrise", 3476), ("DeathlessGuardians", 3478), ("PrimevalElemental", 3511), ("Minloth", 3479)], "Minloth", optional=("PrimevalElemental",))
 fdun(3039, "Krol'dok Stronghold", [("SlavecrusherGrox", 3450), ("TwilightCommanderZarmok", 3452), ("HandlerAshka", 3453), ("Nargurk", 3449), ("OverseerMugg", 3451)], "OverseerMugg")
-# Order from the client data; final = last in order (not confirmed by a player yet).
-fdun(2994, "Alcaz Prison", [("OverseerWrex", 3403), ("TidemistressCazass", 3410), ("KaterinaTheCleaner", 3418), ("TheQuestioner", 3415), ("Blazeroar", 3409)], "Blazeroar", verified=False)
+# Order from the client data; final Blazeroar (last in order, Felix agrees, 22.11.2026 - watch the first run).
+fdun(2994, "Alcaz Prison", [("OverseerWrex", 3403), ("TidemistressCazass", 3410), ("KaterinaTheCleaner", 3418), ("TheQuestioner", 3415), ("Blazeroar", 3409)], "Blazeroar")
 fdun(2974, "Blackmaw Hold", [("Withermaw", 3315), ("Impaan", 3316), ("Bloodmane", 3327), ("Bonesnout", 3322), ("Varrox", 3334), ("BlackmawBehemoth", 3323), ("UnboundSpirit", 3336)], "Varrox")
 fdun(3001, "Shaper's Terrace", [("Titanosaur", 3498), ("RavasaurHunters", 3499), ("Thunderhoof", 3500), ("Venomridge", 3501), ("DirehornMatriarch", 3507), ("Cinder", 3503), ("KingOp", 3504), ("Snowtalon", 3597), ("Bolt", 3505), ("Vitrix", 3600), ("Nanaya", 3502)], "Nanaya")
 
@@ -136,7 +136,7 @@ out = ["local _, ns = ...", "",
 "              opt   optional/rare: does not count toward x/y or the all-bosses rule",
 "              final killing it completes the wing",
 "A wing is complete when a final boss dies, or - if the wing has no final boss - when every",
-"non-optional boss is dead. verified = false: final boss not confirmed yet (Ruins of Lordaeron, Alcaz Prison).",
+"non-optional boss is dead. verified = false would mark a dungeon whose final boss is not confirmed.",
 "]]", "",
 "ns.DUNGEONS = {"]
 for map_id, name, wings, verified in D:

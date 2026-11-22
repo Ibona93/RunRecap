@@ -11,7 +11,7 @@ Boss fields:  key   stable internal name (never shown; names come from ENCOUNTER
               opt   optional/rare: does not count toward x/y or the all-bosses rule
               final killing it completes the wing
 A wing is complete when a final boss dies, or - if the wing has no final boss - when every
-non-optional boss is dead. verified = false: final boss not confirmed yet (Ruins of Lordaeron, Alcaz Prison).
+non-optional boss is dead. verified = false would mark a dungeon whose final boss is not confirmed.
 ]]
 
 ns.DUNGEONS = {
@@ -286,7 +286,7 @@ ns.DUNGEONS = {
 			{ key = "DurgenDirgehammer", ids = { 3496 }, final = true },
 		} },
 	} },
-	[2999] = { name = "Ruins of Lordaeron", verified = false, wings = {
+	[2999] = { name = "Ruins of Lordaeron", wings = {
 		{ key = "main", bosses = {
 			{ key = "Witherfang", ids = { 3353 } },
 			{ key = "TheAbandoned", ids = { 3357 } },
@@ -337,7 +337,7 @@ ns.DUNGEONS = {
 			{ key = "OverseerMugg", ids = { 3451 }, final = true },
 		} },
 	} },
-	[2994] = { name = "Alcaz Prison", verified = false, wings = {
+	[2994] = { name = "Alcaz Prison", wings = {
 		{ key = "main", bosses = {
 			{ key = "OverseerWrex", ids = { 3403 } },
 			{ key = "TidemistressCazass", ids = { 3410 } },
