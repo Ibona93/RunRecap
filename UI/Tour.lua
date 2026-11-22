@@ -71,6 +71,17 @@ end
 
 local function name(n, class) return ns.Widgets.ColorName(n, class) end
 
+-- Icon and name of a real item (game data, client language); fallback: the given name.
+local function itemInfo(itemID, fallback)
+	local itemName, tex
+	if itemID then
+		if GetItemInfo then itemName = ns.TryCall(GetItemInfo, itemID) end
+		if C_Item and C_Item.GetItemIconByID then tex = ns.TryCall(C_Item.GetItemIconByID, itemID) end
+		if not tex and GetItemIcon then tex = ns.TryCall(GetItemIcon, itemID) end
+	end
+	return itemName or fallback, tex or "Interface\\Icons\\INV_Misc_QuestionMark"
+end
+
 -- An item row like in the recap window: small icon with quality border, [name], looter.
 local function itemRow(parent, x, y, w, item)
 	local q = QUALITY[item[2]] or QUALITY[3]
@@ -78,11 +89,13 @@ local function itemRow(parent, x, y, w, item)
 	border:SetColorTexture(q[1], q[2], q[3], 0.9)
 	border:SetSize(14, 14)
 	border:SetPoint("TOPLEFT", x, y - 1)
+	local itemName, tex = itemInfo(item[5], item[1])
 	local ic = parent:CreateTexture(nil, "ARTWORK", nil, 2)
-	ic:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+	ic:SetTexture(tex)
+	ic:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 	ic:SetSize(12, 12)
 	ic:SetPoint("CENTER", border, "CENTER")
-	fs(parent, "GameFontHighlightSmall", q, x + 19, y, "[" .. item[1] .. "]")
+	fs(parent, "GameFontHighlightSmall", q, x + 19, y, "[" .. itemName .. "]")
 	rfs(parent, "GameFontHighlightSmall", nil, -(BOX_W - x - w), y, name(item[3], item[4]))
 end
 
@@ -125,7 +138,7 @@ function DRAW.tooltip(p, s)
 	k:SetPoint("CENTER")
 	k:SetText("Shift")
 	local tip = box(p, 130, -10, 300, 150, { 0.04, 0.04, 0.09, 0.95 }, { 0.47, 0.47, 0.55 })
-	fs(tip, "GameFontHighlight", QUALITY[3], 12, -10, s.item)
+	fs(tip, "GameFontHighlight", QUALITY[3], 12, -10, (itemInfo(s.itemID, s.item)))
 	fs(tip, "GameFontHighlightSmall", { 1, 1, 1 }, 12, -32, s.won)
 	for i, r in ipairs(s.rolls) do
 		local y = -60 - (i - 1) * 18
@@ -134,30 +147,53 @@ function DRAW.tooltip(p, s)
 	end
 end
 
-function DRAW.facts(p, s)
-	local facts = box(p, 24, -12, 220, 146, { 0.09, 0.07, 0.05, 0.85 }, { 0.45, 0.36, 0.2 })
-	local rows = {
-		{ s.duration, "42:17", { 1, 1, 1 } },
-		{ s.wipes, "1", { 1, 0.85, 0.2 } },
-		{ s.balance, ns.Parse.Coins(52857), { 0.25, 1, 0.25 } },
-	}
-	for i, r in ipairs(rows) do
-		local y = -14 - (i - 1) * 24
-		fs(facts, "GameFontNormalSmall", GOLD, 12, y, r[1])
-		rfs(facts, "GameFontHighlightSmall", r[3], -12, y, r[2])
-	end
-	fs(facts, "GameFontNormalSmall", GOLD, 12, -96, ns.L.FACT_DEATHS)
-	fs(facts, "GameFontHighlightSmall", nil, 12, -116, name("Mirela", "PRIEST"))
-	rfs(facts, "GameFontHighlightSmall", { 1, 1, 1 }, -12, -116, "2")
+-- The whole right column of the recap window, filled from the preview run.
+function DRAW.facts(p)
+	local L = ns.L
+	local run = ns.Demo.Run()
+	local sum = ns.Run.Summary(run, false)
+	local coins = ns.Parse.Coins
+	local WHITE, YELLOW, GREENV = { 1, 1, 1 }, { 1, 0.85, 0.2 }, { 0.25, 1, 0.25 }
 
-	local hl = box(p, 262, -12, 230, 146, { 0.09, 0.07, 0.05, 0.85 }, { 0.45, 0.36, 0.2 })
-	fs(hl, "GameFontNormalSmall", GOLD, 12, -10, ns.L.FACT_HIGHLIGHTS)
-	local h = { { "Interface\\Icons\\Ability_Warrior_ShieldBreak", s.h1 }, { "Interface\\Icons\\INV_Misc_Coin_01", s.h2 } }
-	for i, entry in ipairs(h) do
-		local y = -34 - (i - 1) * 50
-		icon(hl, 12, y, 34, entry[1])
-		fs(hl, "GameFontDisableSmall", GREY, 54, y - 2, entry[2][1])
-		fs(hl, "GameFontHighlightSmall", { 1, 1, 1 }, 54, y - 18, entry[2][2])
+	local facts = box(p, 12, -6, 246, 158, { 0.09, 0.07, 0.05, 0.85 }, { 0.45, 0.36, 0.2 })
+	local y = -7
+	local function row(label, value, color, labelColor)
+		fs(facts, "GameFontHighlightSmall", labelColor or GOLD, 10, y, label)
+		rfs(facts, "GameFontHighlightSmall", color or WHITE, -10, y, value)
+		y = y - 12
+	end
+	local function sep()
+		local t = facts:CreateTexture(nil, "ARTWORK")
+		t:SetColorTexture(0.6, 0.48, 0.25, 0.5)
+		t:SetHeight(1)
+		t:SetPoint("TOPLEFT", 8, y - 1)
+		t:SetPoint("TOPRIGHT", -8, y - 1)
+		y = y - 5
+	end
+	row(L.FACT_DURATION, ns.Parse.Clock(sum.duration))
+	row(L.FACT_BOSSES, sum.done .. "/" .. sum.total, GREENV)
+	row(L.FACT_WIPES, tostring(sum.wipes), YELLOW)
+	sep()
+	row(L.FACT_GOLD, "+ " .. coins(sum.money))
+	row(L.FACT_VENDOR, "+ " .. coins(sum.vendor))
+	row(L.FACT_REPAIR, "– " .. coins(sum.repair))
+	row(L.FACT_BALANCE, coins(sum.balance), GREENV)
+	sep()
+	row(L.FACT_DEATHS, "")
+	local shown = 0
+	for _, d in ipairs(sum.deaths) do
+		if shown < 2 then row(name(d.name, run.players[d.name]), tostring(d.n), WHITE, WHITE) shown = shown + 1 end
+	end
+	if sum.noDeaths[1] then row(name(sum.noDeaths[1], run.players[sum.noDeaths[1]]), "0", GREENV, WHITE) end
+
+	local hl = box(p, 266, -6, 238, 158, { 0.09, 0.07, 0.05, 0.85 }, { 0.45, 0.36, 0.2 })
+	fs(hl, "GameFontNormalSmall", GOLD, 10, -7, L.FACT_HIGHLIGHTS)
+	for i, h in ipairs(sum.highlights or {}) do
+		local label, value, tex = ns.Recap.HighlightText(run, h)
+		local hy = -24 - (i - 1) * 33
+		icon(hl, 10, hy, 28, tex)
+		fs(hl, "GameFontDisableSmall", GREY, 44, hy - 1, label)
+		fs(hl, "GameFontHighlightSmall", WHITE, 44, hy - 15, value)
 	end
 end
 
