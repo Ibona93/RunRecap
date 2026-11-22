@@ -63,4 +63,4 @@ Fehler und Ideen: [GitHub Issues](https://github.com/Ibona93/RunRecap/issues). T
 - Erfolgsmoment: Sound und Banner „Dungeon erfolgreich beendet!“, danach die Übersicht.
 - Würfe: wer gewonnen hat und mit Umschalt alle Würfe.
 - Alle 28 Dungeons, auch die 9 neuen Forever-Dungeons (Flügel für Scharlachrotes Kloster, Düsterbruch, Stratholme und Schwarzfelsspitze).
-- Optionen: automatisch öffnen, grüne Items, Erfolgssound, Vorschau. Texte in 10 Sprachen.
+- Fenster im Blizzard-Stil; Optionen: automatisch öffnen, grüne Items, Erfolgssound, Vorschau. Texte in 10 Sprachen.

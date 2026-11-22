@@ -63,4 +63,4 @@ Bug reports and ideas: [GitHub Issues](https://github.com/Ibona93/RunRecap/issue
 - Success moment: sound and "Dungeon completed!" banner, then the recap.
 - Rolls: who won, and with Shift every roll.
 - All 28 dungeons, including the 9 new Forever dungeons (wings for Scarlet Monastery, Dire Maul, Stratholme and Blackrock Spire).
-- Options: open automatically, green items, success sound, preview. Texts in 10 languages.
+- Native Blizzard windows; options: open automatically, green items, success sound, preview. Texts in 10 languages.

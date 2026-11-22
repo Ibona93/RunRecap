@@ -250,15 +250,15 @@ do
 	local h, t = F.Heading(16), F.Text(12)
 	check("heading and text font objects are created", h and t and h ~= t)
 	check("font objects are cached", F.Heading(16) == h)
-	check("Philosopher for headings, Noto Sans for text", F.PathFor("heading"):find("Philosopher") and F.PathFor("text"):find("NotoSans"))
+	check("headings and text use the game font (native look)", F.PathFor("heading") == "Fonts\\FRIZQT__.TTF" and F.PathFor("text") == "Fonts\\FRIZQT__.TTF")
 	check("banner: Cinzel title, game font below", F.PathFor("banner"):find("Cinzel%-Bold") and F.PathFor("game") == "Fonts\\FRIZQT__.TTF"
 		and F.BannerTitle(32) ~= F.BannerText(15))
 	local old = ns.clientLocale
 	ns.clientLocale = "zhCN"
-	check("Chinese client uses the game font", not F.PathFor("heading"):find("Philosopher"))
+	check("Chinese client uses the game font, also for the banner", not F.PathFor("banner"):find("Cinzel"))
 	ns.clientLocale = "ruRU"
-	check("Russian client: Philosopher (has Cyrillic), but game font for the banner title",
-		F.PathFor("heading"):find("Philosopher") and not F.PathFor("banner"):find("Cinzel"))
+	check("Russian client: game font for the banner title (Cinzel has no Cyrillic)",
+		not F.PathFor("banner"):find("Cinzel"))
 	ns.clientLocale = old
 end
 
@@ -337,6 +337,7 @@ do
 	ok, err = pcall(fire, "PLAYER_REGEN_ENABLED")
 	check("end of combat opens the recap", ok and ns.Recap.IsShown(), err)
 	local f = ns.Recap.Frame()
+	check("recap uses Blizzard's window template", f.template == "ButtonFrameTemplate")
 	check("recap header: dungeon and state", f.Dungeon.__text == "Ragefireabgrund" and f.Sub.__text:find(ns.L.COMPLETED, 1, true) ~= nil)
 
 	-- find rendered rows by content

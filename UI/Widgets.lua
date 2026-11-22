@@ -1,9 +1,10 @@
 local ADDON_NAME, ns = ...
 
 --[[
-Shared look (as in BGF): dark brown/black windows, golden headings and borders, green hints.
-Own small popup menu instead of Blizzard's menus, own Escape handling instead of
-UISpecialFrames. Only plain, unprotected frames.
+Shared look: native Blizzard frames (decision 22.11.2026) - window and inset templates,
+red panel buttons, game fonts, gold headings, green hints. Own small popup menu instead of
+Blizzard's menus (taint), own Escape handling instead of UISpecialFrames. Only plain,
+unprotected frames.
 ]]
 
 local W = {}
@@ -16,7 +17,6 @@ W.GREY = { 0.62, 0.62, 0.62 }
 W.DARKGREY = { 0.45, 0.45, 0.45 }
 W.GREEN = { 0.25, 1, 0.25 }
 W.YELLOW = { 1, 0.85, 0.2 }
-W.BORDER = { 0.6, 0.48, 0.25 }
 
 local QUALITY_HEX = {
 	[0] = "9d9d9d", [1] = "ffffff", [2] = "1eff00", [3] = "0070dd", [4] = "a335ee", [5] = "ff8000", [6] = "e6cc80", [7] = "00ccff",
@@ -63,14 +63,6 @@ function W.Text(parent, font, rgb, layer)
 	return fs
 end
 
--- Golden separator line.
-function W.Line(parent, alpha)
-	local t = parent:CreateTexture(nil, "ARTWORK")
-	t:SetColorTexture(W.BORDER[1], W.BORDER[2], W.BORDER[3], alpha or 0.6)
-	t:SetHeight(1)
-	return t
-end
-
 function W.Backdrop(frame, bg, border, edge)
 	if not frame.SetBackdrop then return end
 	frame:SetBackdrop({ bgFile = W.WHITE, edgeFile = W.WHITE, edgeSize = edge or 1 })
@@ -78,53 +70,105 @@ function W.Backdrop(frame, bg, border, edge)
 	frame:SetBackdropBorderColor(border[1], border[2], border[3], border[4] or 1)
 end
 
--- Main window look: dark background, golden border, warm glow at the top.
-function W.Window(frame)
-	W.Backdrop(frame, { 0.05, 0.043, 0.035, 0.97 }, W.BORDER, 2)
-	local glow = frame:CreateTexture(nil, "BACKGROUND", nil, 1)
-	glow:SetPoint("TOPLEFT", 2, -2)
-	glow:SetPoint("TOPRIGHT", -2, -2)
-	glow:SetHeight(90)
-	glow:SetColorTexture(0.22, 0.16, 0.06, 0.4)
-	if glow.SetGradient and CreateColor then
-		pcall(glow.SetGradient, glow, "VERTICAL", CreateColor(0.05, 0.04, 0.03, 0), CreateColor(0.25, 0.18, 0.07, 0.55))
+-- Native window: Blizzard's ButtonFrameTemplate (portrait, title bar, close button), else
+-- BasicFrameTemplateWithInset, else a plain dialog backdrop. Returns frame, kind.
+function W.NativeWindow(name, parent)
+	for _, template in ipairs({ "ButtonFrameTemplate", "BasicFrameTemplateWithInset" }) do
+		local ok, f = pcall(CreateFrame, "Frame", name, parent or UIParent, template)
+		if ok and f then
+			f.template = template
+			return f, template
+		end
 	end
-	frame.Glow = glow
+	local f = CreateFrame("Frame", name, parent or UIParent, "BackdropTemplate")
+	if f.SetBackdrop then
+		f:SetBackdrop({
+			bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
+			edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+			tile = true, tileSize = 32, edgeSize = 32,
+			insets = { left = 11, right = 12, top = 12, bottom = 11 },
+		})
+	end
+	local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
+	close:SetPoint("TOPRIGHT", -4, -4)
+	f.CloseButton = close
+	f.template = "backdrop"
+	return f, "backdrop"
 end
 
--- Button: gold text on dark brown with a golden border.
+-- A child region a template created (table), or nil.
+function W.Child(f, key)
+	local v = rawget(f, key)
+	return type(v) == "table" and v or nil
+end
+
+-- Title in the window's title bar (the template's own title text where there is one).
+function W.SetTitle(f, text)
+	if f.SetTitle then
+		local ok = pcall(f.SetTitle, f, text)
+		if ok then return end
+	end
+	local tc = W.Child(f, "TitleContainer")
+	local fs = W.Child(f, "TitleText") or (tc and W.Child(tc, "TitleText"))
+	if not fs then
+		fs = W.Text(f, ns.Fonts.Heading(13), W.GOLD, "OVERLAY")
+		fs:SetPoint("TOP", 0, -6)
+		f.TitleText = fs
+	end
+	fs:SetText(text)
+end
+
+-- Portrait (round, top left) of a ButtonFrameTemplate window; nothing for other templates.
+function W.SetPortrait(f, texture)
+	local container = W.Child(f, "PortraitContainer")
+	local portrait = W.Child(f, "portrait") or W.Child(f, "Portrait") or (container and W.Child(container, "portrait"))
+	if not portrait then return false end
+	if SetPortraitToTexture then
+		local ok = pcall(SetPortraitToTexture, portrait, texture)
+		if ok then return true end
+	end
+	portrait:SetTexture(texture)
+	return true
+end
+
+-- The sunken inner box of Blizzard windows (InsetFrameTemplate), else a dark backdrop.
+function W.Inset(parent)
+	local ok, f = pcall(CreateFrame, "Frame", nil, parent, "InsetFrameTemplate")
+	if ok and f then return f end
+	f = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+	W.Backdrop(f, { 0, 0, 0, 0.45 }, { 0.3, 0.3, 0.3, 1 })
+	return f
+end
+
+-- Blizzard's red panel button. Width from the text if none is given.
 function W.Button(parent, text, width, height)
-	local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
-	b:SetSize(width or 100, height or 24)
-	W.Backdrop(b, { 0.14, 0.1, 0.04, 0.95 }, { 0.8, 0.64, 0.25, 1 })
-	b.Text = W.Text(b, ns.Fonts.Text(12), W.GOLD)
-	b.Text:SetPoint("CENTER")
-	b.Text:SetJustifyH("CENTER")
-	b.Text:SetText(text or "")
-	b:SetScript("OnEnter", function(self)
-		if self.SetBackdropColor then self:SetBackdropColor(0.28, 0.2, 0.06, 0.95) end
+	local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
+	b:SetSize(width or 100, height or 22)
+	b.SetLabel = function(self, t)
+		self:SetText(t)
+		if not width then
+			local w = self.GetTextWidth and self:GetTextWidth() or nil
+			self:SetWidth(math.ceil(w or 60) + 30)
+		end
+	end
+	b:SetLabel(text or "")
+	b:HookScript("OnEnter", function(self)
 		if self.tooltip then
 			GameTooltip:SetOwner(self, "ANCHOR_TOP")
 			GameTooltip:SetText(self.tooltip, 1, 1, 1, 1, true)
 			GameTooltip:Show()
 		end
 	end)
-	b:SetScript("OnLeave", function(self)
-		if self.SetBackdropColor then self:SetBackdropColor(0.14, 0.1, 0.04, 0.95) end
+	b:HookScript("OnLeave", function(self)
 		if self.tooltip then GameTooltip:Hide() end
 	end)
-	b.SetLabel = function(self, t)
-		self.Text:SetText(t)
-		if not width then self:SetWidth(math.ceil(self.Text:GetStringWidth() or 60) + 28) end
-	end
-	if not width then b:SetLabel(text or "") end
 	return b
 end
 
 function W.Check(parent, text, getter, setter)
 	local cb = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
 	cb:SetSize(24, 24)
-	cb.Label = W.Text(cb, ns.Fonts.Text(13), { 1, 1, 1 })
+	cb.Label = W.Text(cb, ns.Fonts.Text(12), { 1, 1, 1 })
 	cb.Label:SetPoint("LEFT", cb, "RIGHT", 4, 0)
 	cb.Label:SetText(text)
 	cb:SetScript("OnShow", function(self) self:SetChecked(getter() and true or false) end)
@@ -195,7 +239,17 @@ local function createPopup()
 	popup:SetFrameStrata("FULLSCREEN_DIALOG")
 	popup:SetClampedToScreen(true)
 	popup:EnableMouse(true)
-	W.Backdrop(popup, { 0.04, 0.035, 0.03, 0.96 }, { 0.55, 0.45, 0.28, 1 })
+	-- tooltip look, like Blizzard's own dropdown lists
+	if popup.SetBackdrop then
+		popup:SetBackdrop({
+			bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+			tile = true, tileSize = 16, edgeSize = 16,
+			insets = { left = 4, right = 4, top = 4, bottom = 4 },
+		})
+		popup:SetBackdropColor(0.05, 0.05, 0.05, 0.95)
+		popup:SetBackdropBorderColor(0.7, 0.7, 0.7, 1)
+	end
 	popup:SetScript("OnHide", function() if catcher then catcher:Hide() end end)
 	popup:Hide()
 	W.CloseOnEscape(popup, close)
@@ -215,7 +269,7 @@ local function popupRow(i)
 	r.Text = W.Text(r, ns.Fonts.Text(12))
 	r.Text:SetWordWrap(false)
 	r.Line = r:CreateTexture(nil, "ARTWORK")
-	r.Line:SetColorTexture(0.55, 0.45, 0.28, 0.6)
+	r.Line:SetColorTexture(0.6, 0.6, 0.6, 0.4)
 	r.Line:SetHeight(1)
 	r.Line:SetPoint("LEFT", PAD, 0)
 	r.Line:SetPoint("RIGHT", -PAD, 0)

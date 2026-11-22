@@ -1,16 +1,11 @@
-Fonts shipped with Run Recap Forever (all SIL Open Font License 1.1, see OFL-*.txt):
+Fonts shipped with Run Recap Forever (SIL Open Font License 1.1, see OFL-cinzel.txt):
 
-Philosopher-Regular.ttf      Philosopher, (c) The Philosopher Project Authors.
-                             Subset to Latin/Greek/Cyrillic. Used for headings.
-NotoSans-Regular.ttf         Noto Sans, (c) The Noto Project Authors.
-                             Static Regular instance of the variable font, subset to Latin/Greek/Cyrillic.
-                             Used for body text.
 Cinzel-Bold.ttf              Cinzel, (c) The Cinzel Project Authors.
                              Static Bold (wght 700) instance of the variable font, subset to Latin incl. Latin-1
                              and Latin Extended-A. Used for the title of the success banner.
 
-Korean and Chinese clients use the game font instead (these files have no CJK glyphs).
-Cinzel has no Cyrillic: Russian clients use the game font for the banner title.
-The banner's smaller lines use the game's own font (Friz Quadrata), which is not shipped.
+Everything else (windows, options, the banner's smaller lines) uses the game's own font
+(Friz Quadrata on Latin clients), which is not shipped.
+Cinzel has no Cyrillic or CJK: Russian, Korean and Chinese clients use the game font for the banner title too.
 
 Source: https://github.com/google/fonts

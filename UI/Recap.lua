@@ -1,7 +1,8 @@
 local _, ns = ...
 
 --[[
-Recap window (Overview v2): left "Bosses & loot" (scrollable), right "Run facts".
+Recap window (Overview v2, native frame since 22.11.2026): Blizzard window template with a
+chest portrait, left inset "Bosses & loot" (scrollable), right inset "Run facts".
 Tooltips: boss row (Shift: wipes, deaths, item count), item name (Blizzard item tooltip +
 looter/source), rest of the item row (rolls; Shift: all rolls). Updates live while the run
 goes on (late rolls of the end boss).
@@ -12,7 +13,9 @@ ns.Recap = Recap
 
 local W = ns.Widgets
 local WIDTH, HEIGHT = 680, 590
-local LEFT_W, RIGHT_W, PAD = 388, 226, 18
+local INSET_W, LEFT_W, RIGHT_W, TOP = 408, 372, 242, 76
+local PORTRAIT = "Interface\\Icons\\INV_Box_02"
+local SKULL = "|TInterface\\TargetingFrame\\UI-TargetingFrame-Skull:12:12:0:0|t "
 local frame, scroll, content
 local pools = { boss = {}, item = {}, line = {} }
 local used = { boss = 0, item = 0, line = 0 }
@@ -143,13 +146,12 @@ local function newBossRow()
 	r.Minute = W.Text(r, ns.Fonts.Text(11), W.GREY)
 	r.Minute:SetPoint("LEFT", 0, 0)
 	r.Minute:SetWidth(38)
-	r.Name = W.Text(r, ns.Fonts.Heading(15), { 1, 1, 1 })
+	r.Name = W.Text(r, ns.Fonts.Heading(14), { 1, 1, 1 })
 	r.Name:SetPoint("LEFT", 42, 0)
 	r.Name:SetWordWrap(false)
-	r.Tag = CreateFrame("Frame", nil, r, "BackdropTemplate")
-	W.Backdrop(r.Tag, { 0.16, 0.11, 0.03, 0.9 }, W.GOLD)
-	r.Tag.Text = W.Text(r.Tag, ns.Fonts.Text(10), W.GOLD)
-	r.Tag.Text:SetPoint("CENTER", 0, 0)
+	r.Tag = CreateFrame("Frame", nil, r)
+	r.Tag.Text = W.Text(r.Tag, ns.Fonts.Text(11), W.GOLD)
+	r.Tag.Text:SetPoint("LEFT", 0, 0)
 	r.Tag:SetHeight(15)
 	r.Tag:SetPoint("LEFT", r.Name, "RIGHT", 8, 0)
 	r.Fight = W.Text(r, ns.Fonts.Text(11), W.GREY)
@@ -266,14 +268,14 @@ local function fillBoss(r, run, entry, label)
 		local final = ns.Run.IsFinal(kill)
 		r.Tag:SetShown(final)
 		if final then
-			r.Tag.Text:SetText(l.FINAL_BOSS)
-			r.Tag:SetWidth(math.ceil(r.Tag.Text:GetStringWidth() or 50) + 12)
+			r.Tag.Text:SetText(SKULL .. l.FINAL_BOSS)
+			r.Tag:SetWidth(math.ceil(r.Tag.Text:GetStringWidth() or 50) + 4)
 		end
 		r:EnableMouse(true)
 	else
 		r.Minute:SetText("")
 		r.Name:SetText(label)
-		r.Name:SetTextColor(0.8, 0.75, 0.6)
+		r.Name:SetTextColor(W.GOLD[1], W.GOLD[2], W.GOLD[3])
 		r.Fight:SetText("")
 		r.Tag:Hide()
 		r:EnableMouse(false)
@@ -291,7 +293,7 @@ local function factRow(i)
 	if f then return f end
 	local box = frame.Facts
 	f = {}
-	f.Label = W.Text(box, ns.Fonts.Text(12), { 0.85, 0.82, 0.75 })
+	f.Label = W.Text(box, ns.Fonts.Text(12), { 1, 1, 1 })
 	f.Value = W.Text(box, ns.Fonts.Text(12), { 1, 1, 1 })
 	f.Value:SetJustifyH("RIGHT")
 	facts[i] = f
@@ -301,12 +303,12 @@ end
 local function renderFacts(run, s)
 	local l = L()
 	local box = frame.Facts
-	local i, y = 0, -36
+	local i, y = 0, -34
 	local function row(label, value, rgb, opts)
 		i = i + 1
 		local f = factRow(i)
 		opts = opts or {}
-		f.Label:SetFontObject(opts.header and ns.Fonts.Heading(14) or ns.Fonts.Text(12))
+		f.Label:SetFontObject(opts.header and ns.Fonts.Heading(13) or ns.Fonts.Text(12))
 		f.Label:ClearAllPoints()
 		f.Value:ClearAllPoints()
 		f.Label:SetPoint("TOPLEFT", box, "TOPLEFT", 12, y)
@@ -318,7 +320,7 @@ local function renderFacts(run, s)
 			f.Label:SetWordWrap(false)
 		end
 		f.Label:SetText(label)
-		local lc = opts.header and W.GOLD or opts.labelColor or { 0.85, 0.82, 0.75 }
+		local lc = opts.header and W.GOLD or opts.labelColor or W.GOLD
 		f.Label:SetTextColor(lc[1], lc[2], lc[3])
 		f.Value:SetPoint("TOPRIGHT", box, "TOPRIGHT", -12, y)
 		f.Value:SetText(value or "")
@@ -447,9 +449,10 @@ end
 
 local function create()
 	local l = L()
-	frame = CreateFrame("Frame", "RunRecapFrame", UIParent, "BackdropTemplate")
+	frame = W.NativeWindow("RunRecapFrame", UIParent)
 	frame:SetSize(WIDTH, HEIGHT)
 	frame:SetFrameStrata("DIALOG")
+	frame:SetToplevel(true)
 	frame:SetClampedToScreen(true)
 	frame:EnableMouse(true)
 	frame:SetMovable(true)
@@ -459,53 +462,53 @@ local function create()
 		self:StopMovingOrSizing()
 		savePosition()
 	end)
-	W.Window(frame)
+	-- the template's single inset is replaced by two (left: bosses, right: facts)
+	for _, key in ipairs({ "Inset", "InsetBg" }) do
+		local inset = W.Child(frame, key)
+		if inset then inset:Hide() end
+	end
+	W.SetTitle(frame, l.RECAP_TITLE)
+	local hasPortrait = W.SetPortrait(frame, PORTRAIT)
 
-	frame.Title = W.Text(frame, ns.Fonts.Heading(22), W.GOLD)
-	frame.Title:SetPoint("TOPLEFT", PAD, -14)
-	frame.Title:SetText(l.RECAP_TITLE)
-	frame.Dungeon = W.Text(frame, ns.Fonts.Heading(16), { 1, 1, 1 })
-	frame.Dungeon:SetPoint("TOPLEFT", frame.Title, "BOTTOMLEFT", 0, -4)
+	local headerX = hasPortrait and 66 or 16
+	frame.Dungeon = W.Text(frame, ns.Fonts.Heading(16), W.GOLD)
+	frame.Dungeon:SetPoint("TOPLEFT", headerX, -30)
+	frame.Dungeon:SetPoint("RIGHT", frame, "RIGHT", -16, 0)
+	frame.Dungeon:SetWordWrap(false)
 	frame.Sub = W.Text(frame, ns.Fonts.Text(11), W.GREY)
-	frame.Sub:SetPoint("TOPLEFT", frame.Dungeon, "BOTTOMLEFT", 0, -3)
+	frame.Sub:SetPoint("TOPLEFT", frame.Dungeon, "BOTTOMLEFT", 0, -4)
 
-	local close = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
-	close:SetPoint("TOPRIGHT", -2, -2)
-
-	local top = W.Line(frame, 0.8)
-	top:SetPoint("TOPLEFT", PAD, -84)
-	top:SetPoint("TOPRIGHT", -PAD, -84)
-
-	frame.LeftHeader = W.Text(frame, ns.Fonts.Heading(15), W.GOLD)
-	frame.LeftHeader:SetPoint("TOPLEFT", PAD, -96)
+	local left = W.Inset(frame)
+	left:SetPoint("TOPLEFT", 10, -TOP)
+	left:SetPoint("BOTTOMLEFT", 10, 28)
+	left:SetWidth(INSET_W)
+	frame.Left = left
+	frame.LeftHeader = W.Text(left, ns.Fonts.Heading(13), W.GOLD)
+	frame.LeftHeader:SetPoint("TOPLEFT", 10, -9)
 	frame.LeftHeader:SetText(l.BOSSES_LOOT)
 
-	scroll = W.Scroll(frame)
-	scroll:SetPoint("TOPLEFT", PAD, -120)
-	scroll:SetSize(LEFT_W, HEIGHT - 120 - 54)
+	scroll = W.Scroll(left)
+	scroll:SetPoint("TOPLEFT", 8, -30)
+	scroll:SetPoint("BOTTOMRIGHT", -28, 6)
 	content = scroll.Content
-	content:SetWidth(LEFT_W - 6)
+	content:SetWidth(LEFT_W)
 
-	frame.Facts = CreateFrame("Frame", nil, frame, "BackdropTemplate")
-	frame.Facts:SetPoint("TOPRIGHT", -PAD, -96)
-	frame.Facts:SetSize(RIGHT_W, HEIGHT - 96 - 54)
-	W.Backdrop(frame.Facts, { 0.09, 0.07, 0.05, 0.85 }, { 0.45, 0.36, 0.2, 1 })
-	frame.Facts.Header = W.Text(frame.Facts, ns.Fonts.Heading(15), W.GOLD)
-	frame.Facts.Header:SetPoint("TOPLEFT", 12, -10)
+	frame.Facts = W.Inset(frame)
+	frame.Facts:SetPoint("TOPLEFT", left, "TOPRIGHT", 6, 0)
+	frame.Facts:SetPoint("BOTTOMRIGHT", -10, 28)
+	frame.Facts.Header = W.Text(frame.Facts, ns.Fonts.Heading(13), W.GOLD)
+	frame.Facts.Header:SetPoint("TOPLEFT", 12, -9)
 	frame.Facts.Header:SetText(l.RUN_FACTS)
 
-	local bottom = W.Line(frame, 0.6)
-	bottom:SetPoint("BOTTOMLEFT", PAD, 44)
-	bottom:SetPoint("BOTTOMRIGHT", -PAD, 44)
 	frame.Hint = W.Text(frame, ns.Fonts.Text(11), W.GREEN)
-	frame.Hint:SetPoint("BOTTOMLEFT", PAD, 18)
+	frame.Hint:SetPoint("BOTTOMLEFT", 16, 9)
 	frame.Hint:SetText(l.SHIFT_HINT)
 
-	frame.Close = W.Button(frame, l.CLOSE, 100, 24)
-	frame.Close:SetPoint("BOTTOMRIGHT", -PAD, 12)
+	frame.Close = W.Button(frame, l.CLOSE, 96, 22)
+	frame.Close:SetPoint("BOTTOMRIGHT", -8, 4)
 	frame.Close:SetScript("OnClick", function() Recap.Hide() end)
-	frame.Options = W.Button(frame, l.OPTIONS, 100, 24)
-	frame.Options:SetPoint("RIGHT", frame.Close, "LEFT", -8, 0)
+	frame.Options = W.Button(frame, l.OPTIONS, 96, 22)
+	frame.Options:SetPoint("RIGHT", frame.Close, "LEFT", -2, 0)
 	frame.Options:SetScript("OnClick", function() if ns.Options then ns.Options.Open() end end)
 
 	frame:RegisterEvent("MODIFIER_STATE_CHANGED")
@@ -517,9 +520,15 @@ local function create()
 			Recap.RequestRender()
 		end
 	end)
-	frame:SetScript("OnHide", function() hovered = nil GameTooltip:Hide() end)
-	W.CloseOnEscape(frame, function() Recap.Hide() end)
 	frame:Hide()
+	-- Blizzard's window sounds (character info open/close)
+	frame:HookScript("OnShow", function() if PlaySound then pcall(PlaySound, 839) end end)
+	frame:HookScript("OnHide", function()
+		hovered = nil
+		GameTooltip:Hide()
+		if PlaySound then pcall(PlaySound, 840) end
+	end)
+	W.CloseOnEscape(frame, function() Recap.Hide() end)
 end
 
 local function applyPosition()
