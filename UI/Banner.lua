@@ -119,10 +119,16 @@ local function onUpdate(self, elapsed)
 	if self.EnableMouse then self:EnableMouse(not inCombat()) end
 end
 
+-- "1 wipe" / "3 wipes" in the client's language
+function ns.WipesText(n)
+	n = n or 0
+	return n == 1 and ns.L.WIPE_ONE or ns.L.WIPES_N:format(n)
+end
+
 function Banner.StatusLine(run)
 	local L = ns.L
 	local s = ns.Run.Summary(run, true)
-	return L.BANNER_STATUS:format(ns.Parse.Clock(s.duration), s.done, s.total, s.wipes)
+	return L.BANNER_STATUS:format(ns.Parse.Clock(s.duration), s.done, s.total, ns.WipesText(s.wipes))
 end
 
 -- Shows the banner for `run`. onDone(run) replaces "open the recap" (used by the preview).

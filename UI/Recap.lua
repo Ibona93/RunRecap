@@ -381,7 +381,7 @@ function Recap.HighlightText(run, h)
 	if h.key == "fastest" then
 		return l.HL_FASTEST, (h.name or "?") .. " · " .. clock(h.value), HL_ICONS.fastest
 	elseif h.key == "hardest" then
-		local v = h.wipes and (h.wipes .. " " .. l.FACT_WIPES) or clock(h.value)
+		local v = h.wipes and ns.WipesText(h.wipes) or clock(h.value)
 		return l.HL_HARDEST, (h.name or "?") .. " · " .. v, HL_ICONS.hardest
 	elseif h.key == "loot" then
 		return l.HL_MOST_LOOT, playerName(run, h.name) .. " · " .. h.value, HL_ICONS.loot
@@ -399,17 +399,18 @@ function Recap.HighlightText(run, h)
 	return "?", "", nil
 end
 
--- Up to four tiles, spread evenly over the box height.
+-- Up to four tiles filling the box: each card as tall as its slot, 4 px apart.
 function Recap.RenderHighlights(run, s, boxH)
 	local hl = frame.Highlights
 	local list = s.highlights or {}
-	local step = math.max(40, math.min(58, ((boxH or 170) - 34) / 4))
+	local step = math.max(42, math.min(64, ((boxH or 170) - 36) / 4))
 	for k, tile in ipairs(hl.Tiles) do
 		local h = list[k]
 		tile:SetShown(h ~= nil)
 		tile:ClearAllPoints()
-		tile:SetPoint("TOPLEFT", hl, "TOPLEFT", 10, -30 - (k - 1) * step)
-		tile:SetPoint("RIGHT", hl, "RIGHT", -10, 0)
+		tile:SetPoint("TOPLEFT", hl, "TOPLEFT", 8, -30 - (k - 1) * step)
+		tile:SetPoint("RIGHT", hl, "RIGHT", -8, 0)
+		tile:SetHeight(step - 4)
 		if h then
 			local label, value, icon = Recap.HighlightText(run, h)
 			tile.Icon:SetTexture(icon or "Interface\\Icons\\INV_Misc_QuestionMark")
@@ -503,22 +504,30 @@ local function savePosition()
 	ns.db.window = { point = point, relPoint = relPoint, x = x, y = y }
 end
 
-local function newTile(parent, index)
+-- A highlight tile: a slightly lighter card filling its slot, icon and two lines centred.
+local function newTile(parent, index, skin)
 	local t = CreateFrame("Frame", nil, parent)
 	t:SetHeight(42)
-	t:SetPoint("TOPLEFT", 10, -30 - (index - 1) * 46)
-	t:SetPoint("RIGHT", parent, "RIGHT", -10, 0)
+	t:SetPoint("TOPLEFT", 8, -30 - (index - 1) * 46)
+	t:SetPoint("RIGHT", parent, "RIGHT", -8, 0)
+	t.Bg = t:CreateTexture(nil, "BACKGROUND", nil, 1)
+	t.Bg:SetAllPoints()
+	if skin == "recap" then
+		t.Bg:SetColorTexture(0.6, 0.45, 0.2, 0.1)
+	else
+		t.Bg:SetColorTexture(1, 1, 1, 0.05)
+	end
 	t.Icon = t:CreateTexture(nil, "ARTWORK")
-	t.Icon:SetSize(32, 32)
-	t.Icon:SetPoint("LEFT", 0, 0)
+	t.Icon:SetSize(34, 34)
+	t.Icon:SetPoint("LEFT", 6, 0)
 	t.Icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 	t.Label = W.Text(t, ns.Fonts.Text(11), W.GREY)
-	t.Label:SetPoint("TOPLEFT", t.Icon, "TOPRIGHT", 8, -1)
-	t.Label:SetPoint("RIGHT", t, "RIGHT", 0, 0)
+	t.Label:SetPoint("BOTTOMLEFT", t.Icon, "RIGHT", 8, 1)
+	t.Label:SetPoint("RIGHT", t, "RIGHT", -6, 0)
 	t.Label:SetWordWrap(false)
 	t.Value = W.Text(t, ns.Fonts.Text(12), { 1, 1, 1 })
-	t.Value:SetPoint("BOTTOMLEFT", t.Icon, "BOTTOMRIGHT", 8, 1)
-	t.Value:SetPoint("RIGHT", t, "RIGHT", 0, 0)
+	t.Value:SetPoint("TOPLEFT", t.Icon, "RIGHT", 8, -2)
+	t.Value:SetPoint("RIGHT", t, "RIGHT", -6, 0)
 	t.Value:SetWordWrap(false)
 	return t
 end
@@ -589,7 +598,7 @@ local function create(skin)
 	frame.Highlights.Header:SetPoint("TOPLEFT", 12, -9)
 	frame.Highlights.Header:SetText(l.FACT_HIGHLIGHTS)
 	frame.Highlights.Tiles = {}
-	for k = 1, 4 do frame.Highlights.Tiles[k] = newTile(frame.Highlights, k) end
+	for k = 1, 4 do frame.Highlights.Tiles[k] = newTile(frame.Highlights, k, skin) end
 	frame.Highlights.Empty = W.Text(frame.Highlights, ns.Fonts.Text(11), W.GREY)
 	frame.Highlights.Empty:SetPoint("TOPLEFT", 12, -32)
 	frame.Highlights.Empty:SetText(l.NO_HIGHLIGHTS)
