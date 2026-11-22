@@ -24,9 +24,16 @@ Locales\zhTW.lua
 
 Data\Dungeons.lua
 Logic\Dungeons.lua
+Logic\Parse.lua
+Logic\Run.lua
 
 Core.lua
 
 Dev\Probe.lua
 
 UI\Fonts.lua
+UI\Widgets.lua
+UI\Banner.lua
+UI\Recap.lua
+UI\Options.lua
+UI\Demo.lua

@@ -10,7 +10,10 @@ read_globals = {
 	"GetLocale", "GetBuildInfo", "InCombatLockdown", "IsShiftKeyDown",
 	"GameFontHighlightSmall", "GameFontNormal", "STANDARD_TEXT_FONT", "unpack",
 	"GetInstanceInfo", "GetNumLootItems", "GetLootSlotLink", "GetLootSourceInfo", "CombatLogGetCurrentEventInfo",
-	"PlaySound", "GetTime", "date", "strsplit",
+	"PlaySound", "GetTime", "date", "strsplit", "time",
+	"UnitName", "UnitClass", "UnitExists", "UnitGUID", "UnitIsDeadOrGhost", "UnitIsFeignDeath", "GetPlayerInfoByGUID",
+	"GetLootRollItemLink", "GetItemInfo", "GetItemIcon", "C_Item", "ITEM_QUALITY_COLORS", "RAID_CLASS_COLORS",
+	"CreateColor", "Settings", "ChatEdit_InsertLink",
 }
 
 -- Test files mock the WoW API and set globals on purpose.
