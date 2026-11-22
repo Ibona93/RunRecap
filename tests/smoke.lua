@@ -411,6 +411,8 @@ do
 		and T[1].Value.__text:find("1 Wipe", 1, true) ~= nil and not T[1].Value.__text:find("1 Wipes", 1, true))
 	check("highlights: compact rows", (rawget(T[1], "__h") or 0) >= 30 and (rawget(T[1], "__h") or 99) <= 36)
 	local lines = table.concat(ns.Recap.FactLines(), "\n")
+	check("facts: every player without a death in its own row", lines:find("Bram|0", 1, true) ~= nil and lines:find("Lyss|0", 1, true) ~= nil
+		and lines:find("Thorgar|0", 1, true) ~= nil, lines)
 	check("facts: gold, vendor value, repairs, balance", lines:find("Händlerwert|+ 2", 1, true) ~= nil
 		and lines:find("Reparatur|− 1", 1, true) ~= nil and lines:find("Bilanz|5", 1, true) ~= nil, lines)
 	check("facts box sized to its content", (rawget(f2.Facts, "__h") or 0) > 100 and (rawget(f2.Facts, "__h") or 999) < 300)

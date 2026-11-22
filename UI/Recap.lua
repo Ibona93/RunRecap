@@ -371,8 +371,9 @@ local function renderFacts(run, s)
 	for _, d in ipairs(s.deaths) do
 		row(playerName(run, d.name), tostring(d.n), d.n >= 3 and W.YELLOW or { 1, 1, 1 }, { labelColor = { 1, 1, 1 }, gap = 4 })
 	end
-	if #s.noDeaths > 0 then
-		row(l.NO_DEATH_PLAYERS:format(table.concat(s.noDeaths, ", ")), "", nil, { wide = true, labelColor = W.GREY })
+	-- players without a death: one row each, "0" in green (Felix, 22.11.2026)
+	for _, name in ipairs(s.noDeaths) do
+		row(playerName(run, name), "0", W.GREEN, { labelColor = { 1, 1, 1 }, gap = 4 })
 	end
 	for j = i + 1, #facts do
 		facts[j].Label:Hide()
