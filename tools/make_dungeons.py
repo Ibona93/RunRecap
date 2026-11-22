@@ -6,33 +6,33 @@ def dungeon(map_id, name, wings, verified=True): D.append((map_id, name, wings, 
 def b(key, ids, npc, req=True, final=False): return dict(key=key, ids=ids, npc=npc, req=req, final=final)
 
 dungeon(389, "Ragefire Chasm", [("main", [
-    b("Oggleflint", [2732], [11517]), b("Taragaman", [2733], [11520]),
-    b("Jergosh", [2734], [11518]), b("Bazzalan", [2735], [11519])])])
+    b("Oggleflint", [2732, 430], [11517]), b("Taragaman", [2733, 431], [11520]),
+    b("Jergosh", [2734, 432], [11518]), b("Bazzalan", [2735, 433], [11519])])])
 dungeon(36, "The Deadmines", [("main", [
-    b("RhahkZor", [2741, 2967], [644]), b("MinerJohnson", [3676], [3586], req=False),
-    b("Sneed", [2742, 2968], [642, 643]), b("Gilnid", [2743, 2969], [1763]),
-    b("MrSmite", [2745, 2970], [646]), b("Greenskin", [2744, 2971], [647]),
-    b("VanCleef", [2747, 2972], [639], final=True), b("Cookie", [2746, 2986], [645], req=False)])])
+    b("RhahkZor", [2741, 2967, 161], [644]), b("MinerJohnson", [3676], [3586], req=False),
+    b("Sneed", [2742, 2968, 162], [642, 643]), b("Gilnid", [2743, 2969, 163], [1763]),
+    b("MrSmite", [2745, 2970, 164], [646]), b("Greenskin", [2744, 2971, 166], [647]),
+    b("VanCleef", [2747, 2972, 167], [639], final=True), b("Cookie", [2746, 2986, 165], [645], req=False)])])
 dungeon(43, "Wailing Caverns", [("main", [
     b("Anacondra", [585], [3671]), b("Pythas", [588], [3670]), b("Cobrahn", [586], [3669]),
     b("Kresh", [587], [3653], req=False), b("Skum", [589], [3674], req=False),
     b("Serpentis", [590], [3673]), b("Verdan", [591], [5775]),
     b("Mutanus", [592], [3654], final=True)])])
 dungeon(48, "Blackfathom Deeps", [("main", [
-    b("GhamooRa", [2916, 2761], [4887]), b("Serevess", [2915, 2762], [4831]),
-    b("Gelihast", [2914, 2763], [6243]), b("Kelris", [2911, 2766], [4832]),
-    b("OldSerrakis", [2912, 2765], [4830], req=False), b("Akumai", [2910, 2767], [4829], final=True)])])
+    b("GhamooRa", [2916, 2761, 219], [4887]), b("Serevess", [2915, 2762, 220], [4831]),
+    b("Gelihast", [2914, 2763, 221], [6243]), b("LorgusJett", [222], [12902], req=False), b("Kelris", [2911, 2766, 225], [4832]),
+    b("OldSerrakis", [2912, 2765, 224], [4830], req=False), b("Akumai", [2910, 2767, 226], [4829], final=True)])])
 dungeon(34, "The Stockade", [("main", [
     b("Targorr", [2756], [1696]), b("KamDeepfury", [2757], [1666]), b("Hamhock", [2758], [1717]),
     b("BazilThredd", [2760], [1716]), b("DextrenWard", [2759], [1663])])])
 dungeon(33, "Shadowfang Keep", [("main", [
-    b("Rethilgore", [2748], [3914]), b("Razorclaw", [2749], [3886]), b("Silverlaine", [2750], [3887]),
-    b("Springvale", [2751], [4278]), b("Odo", [2752], [4279]), b("Fenrus", [2753], [4274]),
-    b("Nandos", [2754], [3927]), b("Arugal", [2755], [4275], final=True)])])
+    b("Rethilgore", [2748, 464], [3914]), b("Razorclaw", [2749, 465], [3886]), b("Silverlaine", [2750, 466], [3887]),
+    b("Springvale", [2751, 467], [4278]), b("Odo", [2752, 468], [4279]), b("Fenrus", [2753, 469], [4274]),
+    b("Nandos", [2754, 470], [3927]), b("Arugal", [2755, 471], [4275], final=True)])])
 dungeon(47, "Razorfen Kraul", [("main", [
-    b("Roogug", [2773], [6168]), b("Aggem", [2774], [4424]), b("Jargba", [2775], [4428]),
-    b("Ramtusk", [2776], [4420]), b("Agathelos", [2777], [4422]),
-    b("Charlga", [2778], [4421], final=True)])])
+    b("Roogug", [2773], [6168]), b("Aggem", [2774, 439], [4424]), b("Jargba", [2775, 440], [4428]),
+    b("Ramtusk", [2776, 441], [4420]), b("Agathelos", [2777, 883], [4422]),
+    b("Charlga", [2778, 443], [4421], final=True)])])
 dungeon(90, "Gnomeregan", [("main", [
     b("Grubbis", [2768, 379], [7361]), b("ViscousFallout", [2769, 378], [7079]),
     b("Electrocutioner", [2770, 380], [6235]), b("CrowdPummeler", [2771, 381], [6229]),
@@ -44,9 +44,9 @@ dungeon(189, "Scarlet Monastery", [
     ("cathedral", [b("Fairbanks", [449], [4542], req=False),
                    b("MograineWhitemane", [450], [3977, 3976], final=True)])])
 dungeon(129, "Razorfen Downs", [("main", [
-    b("Tutenkash", [2780], [7355]), b("Plaguemaw", [2781], [7356], req=False),
-    b("Mordresh", [2782], [7357]), b("Ragglesnout", [2783], [7354], req=False),
-    b("Glutton", [2784], [8567]), b("Amnennar", [2785], [7358], final=True)])])
+    b("Tutenkash", [2780, 434], [7355]), b("Plaguemaw", [2781], [7356], req=False),
+    b("Mordresh", [2782, 435], [7357]), b("Ragglesnout", [2783], [7354], req=False),
+    b("Glutton", [2784, 436], [8567]), b("Amnennar", [2785, 437], [7358], final=True)])])
 dungeon(70, "Uldaman", [("main", [
     b("Revelosh", [547], [6910]), b("LostDwarves", [548], [6906, 6907, 6908]),
     b("Ironaya", [549], [7228]), b("ObsidianSentinel", [1887], [7023]),
@@ -70,7 +70,7 @@ dungeon(230, "Blackrock Depths", [("main", [
     b("RingOfLaw", [230], [9028, 9031, 9029, 9030, 9032, 9027]), b("Loregrain", [231], [9024]),
     b("Incendius", [232], [9017]), b("Stilgiss", [233], [9041]), b("Fineous", [234], [9056], req=False),
     b("BaelGar", [235], [9016]), b("Angerforge", [236], [9033]), b("Argelmach", [237], [8983]),
-    b("Hurley", [238], [9537], req=False), b("Phalanx", [239], [9502]), b("Plugger", [241], [9499], req=False),
+    b("Hurley", [238], [9537], req=False), b("Phalanx", [239], [9502]), b("Plugger", [241], [9499], req=False), b("Ribbly", [240], [9543], req=False),
     b("Flamelash", [242], [9156]), b("TheSeven", [243], [9035, 9039, 9040, 9037, 9034, 9038, 9036]),
     b("Magmus", [244], [9938]), b("Thaurissan", [245, 2790], [9019], final=True)])])
 dungeon(229, "Blackrock Spire", [
@@ -78,9 +78,9 @@ dungeon(229, "Blackrock Spire", [
                b("Smolderweb", [270], [10596]), b("Urok", [271], [10584], req=False),
                b("Zigris", [272], [9736]), b("Gizrul", [273], [10268], req=False),
                b("Halycon", [274], [10220]), b("Wyrmthalak", [275], [9568], final=True)]),
-    ("upper", [b("Emberseer", [3062], [9816]), b("Rend", [3063], [10339, 10429]),
-               b("TheBeast", [3068], [10430]), b("Valthalak", [3070], [16042], req=False),
-               b("Drakkisath", [3069], [10363], final=True)])])
+    ("upper", [b("Emberseer", [3062, 276], [9816]), b("Solakar", [277], [10264], req=False), b("Rend", [3063, 278], [10339, 10429]),
+               b("TheBeast", [3068, 279], [10430]), b("Valthalak", [3070], [16042], req=False),
+               b("Drakkisath", [3069, 280], [10363], final=True)])])
 dungeon(429, "Dire Maul", [
     ("east", [b("Zevrim", [343], [11490]), b("Hydrospawn", [344], [13280]),
               b("Lethtendris", [345], [14327]), b("Alzzin", [346], [11492], final=True)]),
@@ -90,7 +90,7 @@ dungeon(429, "Dire Maul", [
                b("Slipkik", [365], [14323]), b("Kromcrush", [366], [14325]), b("ChoRush", [367], [14324]),
                b("Gordok", [368], [11501], final=True)])])
 dungeon(289, "Scholomance", [("main", [
-    b("Kirtonos", [2805, 451], [10506]), b("Jandice", [2804, 452], [10503]), b("Rattlegore", [2811, 453], [11622]),
+    b("Kormok", [3055], [16118], req=False), b("Kirtonos", [2805, 451], [10506]), b("Jandice", [2804, 452], [10503]), b("Rattlegore", [2811, 453], [11622]),
     b("Marduk", [2809, 454], [10433]), b("Vectus", [2813, 455], [10432]), b("Ras", [2810, 456], [10508]),
     b("Malicia", [2803, 457], [10505]), b("Krastinov", [2802, 458], [11261]), b("Polkelt", [2808, 459], [10901]),
     b("Ravenian", [2812, 460], [10507]), b("AlexeiBarov", [2807, 461], [10504]),
@@ -99,23 +99,28 @@ dungeon(329, "Stratholme", [
     ("live", [b("Timmy", [474], [10808], req=False), b("Forresten", [473], [10558], req=False),
               b("Unforgiven", [472], [10516], req=False), b("Willey", [475], [10997]),
               b("Malor", [476], [11032], req=False), b("Galford", [477], [10811]),
-              b("Postmaster", [1885], [11143], req=False),
+              b("Postmaster", [1885, 2798], [11143], req=False),
               b("Balnazzar", [478], [10813, 10812], final=True)]),
     ("undead", [b("Barthilas", [482], [10435], req=False), b("Anastari", [479], [10436]),
                 b("Nerubenkan", [480], [10437]), b("Maleki", [481], [10438]),
                 b("Ramstein", [483], [10439]), b("Rivendare", [484], [10440], final=True)])])
 
-# Forever dungeons (IDs from DBM-Party-Forever; boss order = DBM order; FINAL BOSS UNVERIFIED)
-def fdun(map_id, name, bosses, final_key):
-    dungeon(map_id, name, [("main", [b(k, [i], [], final=(k == final_key)) for k, i in bosses])], verified=False)
+# Forever dungeons. IDs from DBM-Party-Forever; boss order, final and optional bosses from the client's
+# DungeonEncounter data (build 1.60.1.70862, github.com/fooxytv/AdventureGuideClassic) and the notes in the
+# ForeverDungeonJournal addon (22.11.2026). verified = False: final boss still uncertain.
+def fdun(map_id, name, bosses, final_key, optional=(), verified=True):
+    dungeon(map_id, name, [("main", [b(k, [i], [], req=(k not in optional), final=(k == final_key)) for k, i in bosses])],
+            verified=verified)
 fdun(3065, "Hall of Thanes", [("FaldrimAnvilmar", 3493), ("Infurnus", 3495), ("Plunder", 3494), ("DurgenDirgehammer", 3496)], "DurgenDirgehammer")
-fdun(2999, "Ruins of Lordaeron", [("Witherfang", 3353), ("TheAbandoned", 3357), ("TheButcher", 3355), ("Rathmael", 3354), ("LordaeronCaptain", 3408), ("ViktorTheVile", 3411), ("Bjork", 3412)], "ViktorTheVile")
-fdun(2998, "Excavation Site: Wetlands", [("Saltspine", 3480), ("Shadetooth", 3481), ("HighlandHorror", 3644), ("RelicGuardian", 3482)], "RelicGuardian")
-fdun(2959, "City of Dalaran", [("ArcaneAnomaly", 3298), ("FelAncient", 3299), ("ManaDevourer", 3300), ("ManaElemental", 3301), ("UnstableSentinel", 3302), ("ShadeOfTheArchmage", 3303), ("LynTheIgnored", 3310), ("Atrexis", 3311), ("ManaWraith", 3312)], "ShadeOfTheArchmage")
-fdun(2970, "The Drowned City", [("ZulAlai", 3474), ("VarTaka", 3475), ("CaptainDreadrise", 3476), ("DeathlessGuardians", 3478), ("PrimevalElemental", 3511), ("Minloth", 3479)], "Minloth")
+# Non-linear ruins; Viktor is summoned (optional). Rath'mael "the last position worth defending" - final is a guess.
+fdun(2999, "Ruins of Lordaeron", [("Witherfang", 3353), ("TheAbandoned", 3357), ("TheButcher", 3355), ("Rathmael", 3354), ("LordaeronCaptain", 3408), ("ViktorTheVile", 3411), ("Bjork", 3412)], "Rathmael", optional=("ViktorTheVile",), verified=False)
+fdun(2998, "Excavation Site: Wetlands", [("Saltspine", 3480), ("Shadetooth", 3481), ("HighlandHorror", 3644), ("RelicGuardian", 3482)], "RelicGuardian", optional=("HighlandHorror",))
+fdun(2959, "City of Dalaran", [("ArcaneAnomaly", 3298), ("FelAncient", 3299), ("ManaDevourer", 3300), ("ManaElemental", 3301), ("UnstableSentinel", 3302), ("ShadeOfTheArchmage", 3303), ("LynTheIgnored", 3310), ("Atrexis", 3311), ("ManaWraith", 3312)], "ShadeOfTheArchmage", optional=("LynTheIgnored",))
+fdun(2970, "The Drowned City", [("ZulAlai", 3474), ("VarTaka", 3475), ("CaptainDreadrise", 3476), ("DeathlessGuardians", 3478), ("PrimevalElemental", 3511), ("Minloth", 3479)], "Minloth", optional=("PrimevalElemental",))
 fdun(3039, "Krol'dok Stronghold", [("SlavecrusherGrox", 3450), ("TwilightCommanderZarmok", 3452), ("HandlerAshka", 3453), ("Nargurk", 3449), ("OverseerMugg", 3451)], "OverseerMugg")
-fdun(2994, "Alcaz Prison", [("OverseerWrex", 3403), ("TidemistressCazass", 3410), ("KaterinaTheCleaner", 3418), ("TheQuestioner", 3415), ("Blazeroar", 3409)], "Blazeroar")
-fdun(2974, "Blackmaw Hold", [("Withermaw", 3315), ("Impaan", 3316), ("Bloodmane", 3327), ("Bonesnout", 3322), ("Varrox", 3334), ("BlackmawBehemoth", 3323), ("UnboundSpirit", 3336)], "UnboundSpirit")
+# Order from the client data; final = last in order (not confirmed by a player yet).
+fdun(2994, "Alcaz Prison", [("OverseerWrex", 3403), ("TidemistressCazass", 3410), ("KaterinaTheCleaner", 3418), ("TheQuestioner", 3415), ("Blazeroar", 3409)], "Blazeroar", verified=False)
+fdun(2974, "Blackmaw Hold", [("Withermaw", 3315), ("Impaan", 3316), ("Bloodmane", 3327), ("Bonesnout", 3322), ("Varrox", 3334), ("BlackmawBehemoth", 3323), ("UnboundSpirit", 3336)], "Varrox")
 fdun(3001, "Shaper's Terrace", [("Titanosaur", 3498), ("RavasaurHunters", 3499), ("Thunderhoof", 3500), ("Venomridge", 3501), ("DirehornMatriarch", 3507), ("Cinder", 3503), ("KingOp", 3504), ("Snowtalon", 3597), ("Bolt", 3505), ("Vitrix", 3600), ("Nanaya", 3502)], "Nanaya")
 
 def lua_list(xs): return "{ " + ", ".join(str(x) for x in xs) + " }"
@@ -123,7 +128,7 @@ out = ["local _, ns = ...", "",
 "--[[",
 "Dungeon data: instance (map) ID from GetInstanceInfo() -> wings -> bosses.",
 "Generated by tools/make_dungeons.py (not shipped) from DeadlyBossMods/DBM-Dungeons encounter IDs,",
-"cross-checked against the Ragefire Chasm probe run (22.11.2026).",
+"cross-checked against the Ragefire Chasm probe run and the Forever client's DungeonEncounter data (22.11.2026).",
 "",
 "Boss fields:  key   stable internal name (never shown; names come from ENCOUNTER_END)",
 "              ids   every known encounter ID (Forever, Classic Era and older variants)",
@@ -131,7 +136,7 @@ out = ["local _, ns = ...", "",
 "              opt   optional/rare: does not count toward x/y or the all-bosses rule",
 "              final killing it completes the wing",
 "A wing is complete when a final boss dies, or - if the wing has no final boss - when every",
-"non-optional boss is dead. verified = false: Forever dungeon, final boss is a guess.",
+"non-optional boss is dead. verified = false: final boss not confirmed yet (Ruins of Lordaeron, Alcaz Prison).",
 "]]", "",
 "ns.DUNGEONS = {"]
 for map_id, name, wings, verified in D:

@@ -146,7 +146,7 @@ do
 	local _, _, stocks = D.FindEncounter(2760)
 	check("Stockade (no fixed end boss): 4 of 5 is not complete", not D.WingProgress(stocks,
 		{ Targorr = true, KamDeepfury = true, Hamhock = true, BazilThredd = true }))
-	check("Forever dungeons are marked unverified", ns.DUNGEONS[3065].verified == false and ns.DUNGEONS[389].verified == nil)
+	check("unconfirmed final bosses are marked (Ruins, Alcaz), confirmed ones not", ns.DUNGEONS[2999].verified == false and ns.DUNGEONS[2994].verified == false and ns.DUNGEONS[3065].verified == nil and ns.DUNGEONS[2974].wings[1].bosses[5].final == true)
 end
 
 print(("\n%d passed, %d failed"):format(passed, failed))

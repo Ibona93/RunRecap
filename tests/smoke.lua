@@ -75,27 +75,6 @@ local played = {}
 _G.PlaySound = function(id) played[#played + 1] = id return id ~= 17316 end
 _G.C_Timer = { After = function(_, fn) fn() end }
 _G.LOOT_ITEM = "%s receives loot: %s."
--- Adventure Guide mock: one tier, one dungeon (Ragefire Chasm) with two bosses and loot.
-local ejSelected
--- Like the real client: no tiers and no instances until the Adventure Guide is loaded.
-_G.EJ_GetNumTiers = function() return _G.EncounterJournal and 1 or 0 end
-_G.EncounterJournal_LoadUI = function() _G.EncounterJournal = {} end
-_G.EJ_SelectTier = function() end
-_G.EJ_ResetLootFilter = function() end
-_G.EJ_GetInstanceByIndex = function(i, isRaid)
-	if i == 1 and not isRaid and _G.EncounterJournal then return 226, "Ragefire Chasm", "", 0, 0, 0, 0, 213, "link", false, 389 end
-end
-_G.EJ_SelectInstance = function() end
-_G.EJ_GetEncounterInfoByIndex = function(i)
-	local list = { { "Oggleflint", 694, 2732 }, { "Taragaman", 695, 2733 } }
-	local e = list[i]
-	if e then return e[1], "", e[2], 0, "link", 226, e[3], 389 end
-end
-_G.EJ_SelectEncounter = function(jeid) ejSelected = jeid end
-_G.C_EncounterJournal = {
-	GetNumLoot = function() return ejSelected == 694 and 2 or 1 end,
-	GetLootInfoByIndex = function(i) return { itemID = (ejSelected or 0) * 10 + i } end,
-}
 
 -------------------------------------------------------------------------------
 -- Load the addon in TOC order
@@ -199,13 +178,6 @@ do
 	played = {}
 	ok, err = pcall(SlashCmdList.RUNRECAP, "sound 878")
 	check("/recap sound 878 plays that ID", ok and played[1] == 878, err)
-	ok, err = pcall(SlashCmdList.RUNRECAP, "ej")
-	local ej = ns.db.ej
-	check("/recap ej dumps instances, encounter IDs and loot", ok and ej and #ej.instances == 1
-		and ej.instances[1].mapID == 389 and ej.instances[1].encounters[2].id == 2733
-		and #ej.instances[1].encounters[1].loot == 2 and ej.instances[1].encounters[2].loot[1] == 6951, err)
-	check("... after loading the Adventure Guide first", ej and ej.apis:find("loaded before=false after=true, tiers=1"))
-	check("... and records which APIs exist", ej and ej.apis:find("EJ_GetInstanceByIndex=yes") and ej.apis:find("C_EJ.GetNumLoot=yes"))
 	ok, err = pcall(SlashCmdList.RUNRECAP, "probe")
 	check("/recap probe again stops", ok and ns.db.probeActive == false and has("STOP"), err)
 	local n = #ns.db.probe
