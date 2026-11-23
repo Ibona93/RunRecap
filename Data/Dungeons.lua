@@ -315,7 +315,7 @@ ns.DUNGEONS = {
 			{ key = "ShadeOfTheArchmage", ids = { 3303 }, final = true },
 			{ key = "LynTheIgnored", ids = { 3310 }, opt = true },
 			{ key = "Atrexis", ids = { 3311 } },
-			{ key = "ManaWraith", ids = { 3312 } },
+			{ key = "ManaWraith", ids = { 3312 }, opt = true },
 		} },
 	} },
 	[2970] = { name = "The Drowned City", wings = {

@@ -5,14 +5,19 @@ The run: one visit to a dungeon instance, from entering it until it ends.
 
   * starts when entering a known dungeon (ns.DUNGEONS), saved in RunRecapDB.currentRun
   * leaving as a ghost: keeps running; leaving alive: paused (pause time is not counted)
-  * ends when another instance is entered, the instance is reset, it was a different copy
-    of the dungeon on return, or after 30 minutes outside
+  * ends when another instance is entered, the instance is reset (message while outside), or
+    after 30 minutes outside; entering the same dungeon again after a completed run (left alive)
+    starts a new run. (Until 23.11.2026 a different instance copy was detected from creature
+    GUIDs - unreliable in Forever, it restarted a run in the middle of Dalaran.)
   * completed when a wing is complete (Logic/Dungeons.lua); the run keeps recording after
     that, because the end boss's loot is rolled for afterwards
   * finished runs that were completed go to RunRecapDB.runs (last 20); others are dropped
 
 Loot -> source (no shipped loot tables):
-  1. own loot window: GetLootSourceInfo -> NPC -> boss, otherwise trash        (sure)
+  1. own loot window: GetLootSourceInfo -> NPC -> boss (from the data or learned), otherwise
+     trash if the dungeon's boss NPC IDs are known; unknown NPCs in dungeons without NPC data
+     (the Forever dungeons) give no answer - the rules below decide, and a roll right after a
+     kill teaches "this NPC is that boss" (RunRecapDB.learnedNpc)                (sure)
   2. rolling: started within ROLL_WINDOW s after a boss kill -> that boss,
      otherwise trash                                                            (sure)
   3. learned from 1/2 earlier: item -> boss (RunRecapDB.learned)               (sure)
@@ -103,7 +108,6 @@ function Run.Resume(run, now)
 	run.pausedTotal = (run.pausedTotal or 0) + math.max(0, now - (run.pausedAt or now))
 	run.pausedAt = nil
 	run.state = "active"
-	run.checkCopy = true     -- the next creature GUID tells whether it is still the same copy
 	ns.Debug("run resumed")
 end
 
@@ -144,6 +148,11 @@ function Run.OnZone(info, now)
 	local dungeon = info.inInstance and info.instanceType == "party" and ns.DUNGEONS[info.mapID]
 	if run then
 		if info.inInstance and info.mapID == run.mapID then
+			if run.completed and run.state == "paused" then
+				-- back in the same dungeon after a completed run (left alive): a new run
+				Run.End("again")
+				return Run.New(info.mapID, info.name or (dungeon and dungeon.name), now)
+			end
 			Run.Resume(run, now)
 			return run
 		end
@@ -163,14 +172,13 @@ end
 
 --[[
 Login or /reload. A run that was active when the game was left counts as paused since it was
-last seen: after 30 minutes it is over; otherwise the next creature GUID checks the copy.
+last seen: after 30 minutes it is over.
 ]]
 function Run.OnLogin(now)
 	now = now or ns.Now()
 	local run = Run.Current()
 	if not run then return end
 	if run.state == "active" then
-		run.checkCopy = true
 		if run.lastSeen and now - run.lastSeen >= Run.PAUSE_LIMIT then
 			Run.End("timeout")
 			return
@@ -202,39 +210,73 @@ function Run.OnInstanceReset()
 	if run and run.state == "paused" then Run.End("reset") end
 end
 
--- A creature GUID seen inside the instance. Remembers the copy; after a return, a different
--- copy (reset meanwhile) ends the old run and starts a new one. Returns the run in use.
-function Run.OnCreatureGUID(guid, now)
-	local run = Run.Current()
-	if not run or run.state ~= "active" then return run end
-	local _, instanceID, zone = ns.Parse.CreatureGUID(guid)
-	if not zone or instanceID ~= run.mapID then return run end
-	if not run.zoneUID then
-		run.zoneUID = zone
-	elseif run.zoneUID ~= zone and run.checkCopy then
-		local mapID, name = run.mapID, run.name
-		Run.End("new copy")
-		run = Run.New(mapID, name, now)
-		run.zoneUID = zone
-		return run
-	end
-	run.checkCopy = nil
-	return run
-end
 
 -------------------------------------------------------------------------------
 -- Players and deaths
 -------------------------------------------------------------------------------
 
+--[[
+Names: in Forever the unit functions give the first name ("Anna"), chat lines the full name
+("Anna Kramer"). A first name and exactly one full name starting with it are one player: the
+full name wins, everything recorded under the first name moves over (run.alias first -> full).
+]]
+local function merge(run, short, full)
+	run.alias = run.alias or {}
+	run.alias[short] = full
+	if run.players[short] ~= nil then
+		if not run.players[full] then run.players[full] = run.players[short] end
+		run.players[short] = nil
+	end
+	if run.deaths[short] then
+		run.deaths[full] = (run.deaths[full] or 0) + run.deaths[short]
+		run.deaths[short] = nil
+	end
+	if run.deadNow[short] then run.deadNow[full], run.deadNow[short] = true, nil end
+	for _, list in pairs(run.bossDeaths) do
+		for i, n in ipairs(list) do if n == short then list[i] = full end end
+	end
+	for _, item in ipairs(run.items) do
+		if item.looter == short then item.looter = full end
+		local r = item.rolls and item.rolls[short]
+		if r then
+			local target = item.rolls[full] or {}
+			target.choice = target.choice or r.choice
+			target.value = target.value or r.value
+			item.rolls[full] = target
+			item.rolls[short] = nil
+		end
+	end
+end
+
+local function reconcile(run)
+	for short in pairs(run.players) do
+		if not short:find(" ", 1, true) then
+			local match, count = nil, 0
+			for full in pairs(run.players) do
+				if full:sub(1, #short + 1) == short .. " " then match, count = full, count + 1 end
+			end
+			if count == 1 then merge(run, short, match) end
+		end
+	end
+end
+
+-- The name a player is recorded under (full name once known).
+function Run.Canon(run, name)
+	if not name then return nil end
+	name = ns.Parse.ShortName(name)
+	return run and run.alias and run.alias[name] or name
+end
+
 function Run.SetPlayer(run, name, class)
 	if not run or not name then return end
-	name = ns.Parse.ShortName(name)
+	name = Run.Canon(run, name)
 	if class or run.players[name] == nil then run.players[name] = class or false end
+	reconcile(run)
 end
 
 function Run.OnDeath(run, name)
 	if not run or not name or run.state ~= "active" then return end
-	name = ns.Parse.ShortName(name)
+	name = Run.Canon(run, name)
 	run.deaths[name] = (run.deaths[name] or 0) + 1
 	if run.players[name] == nil then run.players[name] = false end
 	local enc = run.encounter
@@ -249,7 +291,7 @@ end
 -- Unit state check (UNIT_HEALTH / UNIT_FLAGS / PLAYER_DEAD): counts a death once per dying.
 function Run.OnUnitState(run, name, dead)
 	if not run or not name then return end
-	name = ns.Parse.ShortName(name)
+	name = Run.Canon(run, name)
 	if dead and not run.deadNow[name] then
 		run.deadNow[name] = true
 		Run.OnDeath(run, name)
@@ -354,16 +396,52 @@ local function recentKill(run, now, window)
 	return nil
 end
 
--- Source from the own loot window (GetLootSourceInfo), remembered per item ID.
+-- Boss key of an NPC in this dungeon: from the data, else learned (RunRecapDB.learnedNpc).
+local function npcBoss(run, npc)
+	local mapID, _, _, boss = ns.Dungeons.FindNpc(npc)
+	if boss and mapID == run.mapID then return boss.key end
+	local d = db()
+	local key = d and d.learnedNpc and d.learnedNpc[npc]
+	if key then
+		local m, bossKey = key:match("^(%d+):(.+)$")
+		if tonumber(m) == run.mapID then return bossKey end
+	end
+	return nil
+end
+
+-- Does the data know the boss NPC IDs of this dungeon? (Not for the Forever dungeons.)
+local function hasNpcData(run)
+	local dungeon = ns.DUNGEONS[run.mapID]
+	if not dungeon then return false end
+	for _, wing in ipairs(dungeon.wings) do
+		for _, boss in ipairs(wing.bosses) do
+			if boss.npc and #boss.npc > 0 then return true end
+		end
+	end
+	return false
+end
+
+--[[
+Source from the own loot window (GetLootSourceInfo), remembered per item ID: a killed boss
+(kill index), "trash" (NPC is no boss and the dungeon's boss NPCs are known), or nil (no loot
+window, or an unknown NPC in a dungeon without NPC data - then the other rules decide).
+]]
 local function lootWindowSource(run, itemID, now)
 	local entry = run.loot and run.loot[itemID]
 	if not entry or now - entry.time > Run.LOOT_WINDOW_KEEP then return nil end
-	local mapID, _, _, boss = ns.Dungeons.FindNpc(entry.npc)
-	if boss and mapID == run.mapID then
-		local index = run.killed[boss.key]
-		if index then return index end
-	end
-	return "trash"
+	local key = npcBoss(run, entry.npc)
+	if key then return run.killed[key] or "trash" end
+	if hasNpcData(run) then return "trash" end
+	return nil
+end
+
+-- A roll right after a kill and the loot window of NPC `npc` for that item: NPC = that boss.
+local function learnNpc(run, item, npc)
+	local d = db()
+	local kill = type(item.source) == "number" and run.kills[item.source]
+	if not d or not kill or kill.unknown or not npc then return end
+	d.learnedNpc = d.learnedNpc or {}
+	d.learnedNpc[npc] = learnedKey(run, kill)
 end
 
 local function learnedSource(run, itemID)
@@ -399,9 +477,15 @@ function Run.OnLootWindow(run, slots, now)
 			-- items rolled for right now: the loot window is the better source
 			for _, item in ipairs(run.items) do
 				if item.itemID == itemID and item.historyID and not item.fromWindow and now - item.time <= 60 then
-					item.source = lootWindowSource(run, itemID, now)
-					item.sure, item.fromWindow = true, true
-					learn(run, item)
+					local source = lootWindowSource(run, itemID, now)
+					if source then
+						item.source, item.sure, item.fromWindow = source, true, true
+						learn(run, item)
+					elseif type(item.source) == "number" then
+						-- unknown NPC, rolled right after a kill: that NPC is the boss
+						learnNpc(run, item, slot.npc)
+						item.fromWindow = true
+					end
 					changed(run)
 					break
 				end
@@ -424,10 +508,12 @@ local function dropFor(run, historyID, link, now)
 	item.historyID = historyID
 	item.rolling = true
 	local fromWindow = lootWindowSource(run, item.itemID, now)
-	if fromWindow and run.loot and run.loot[item.itemID] then
+	if fromWindow then
 		item.source, item.fromWindow = fromWindow, true
 	else
 		item.source = recentKill(run, now, Run.ROLL_WINDOW) or "trash"
+		local entry = run.loot and run.loot[item.itemID]
+		if entry and type(item.source) == "number" then learnNpc(run, item, entry.npc) end
 	end
 	item.sure = true
 	learn(run, item)
@@ -450,6 +536,10 @@ function Run.OnRoll(run, r, me, now)
 	local item = dropFor(run, r.historyID, r.link, now)
 	if not item then return end
 	local who = r.self and me or r.player
+	if who then
+		Run.SetPlayer(run, who)
+		who = Run.Canon(run, who)
+	end
 	if r.kind == "choice" and who then
 		local entry = item.rolls[who] or {}
 		entry.choice = r.roll
@@ -466,7 +556,6 @@ function Run.OnRoll(run, r, me, now)
 			entry.choice, entry.value = entry.choice or r.roll, entry.value or r.value
 			item.rolls[who] = entry
 		end
-		if who and run.players[who] == nil then run.players[who] = false end
 	elseif r.kind == "allpassed" then
 		item.rolling = nil
 		item.allPassed = true
@@ -503,8 +592,8 @@ end
 function Run.OnLoot(run, l, who, class, now)
 	if not run or run.state ~= "active" or not l or not who then return end
 	now = now or ns.Now()
-	who = ns.Parse.ShortName(who)
 	Run.SetPlayer(run, who, class)
+	who = Run.Canon(run, who)
 	local itemID = ns.Parse.ItemID(l.link)
 	for _, item in ipairs(run.items) do
 		if item.historyID and not item.claimed and item.itemID == itemID and now - item.time <= Run.CLAIM_WINDOW
@@ -523,7 +612,7 @@ function Run.OnLoot(run, l, who, class, now)
 	item.count = l.count or 1
 	item.looter = who
 	item.direct = true
-	local fromWindow = l.self and run.loot and run.loot[itemID] and lootWindowSource(run, itemID, now)
+	local fromWindow = l.self and lootWindowSource(run, itemID, now)
 	if fromWindow then
 		item.source, item.sure = fromWindow, true
 		learn(run, item)

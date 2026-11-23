@@ -115,7 +115,8 @@ fdun(3065, "Hall of Thanes", [("FaldrimAnvilmar", 3493), ("Infurnus", 3495), ("P
 # Non-linear ruins; Viktor is summoned (optional). Final boss Rath'mael (confirmed by Felix, 22.11.2026).
 fdun(2999, "Ruins of Lordaeron", [("Witherfang", 3353), ("TheAbandoned", 3357), ("TheButcher", 3355), ("Rathmael", 3354), ("LordaeronCaptain", 3408), ("ViktorTheVile", 3411), ("Bjork", 3412)], "Rathmael", optional=("ViktorTheVile",))
 fdun(2998, "Excavation Site: Wetlands", [("Saltspine", 3480), ("Shadetooth", 3481), ("HighlandHorror", 3644), ("RelicGuardian", 3482)], "RelicGuardian", optional=("HighlandHorror",))
-fdun(2959, "City of Dalaran", [("ArcaneAnomaly", 3298), ("FelAncient", 3299), ("ManaDevourer", 3300), ("ManaElemental", 3301), ("UnstableSentinel", 3302), ("ShadeOfTheArchmage", 3303), ("LynTheIgnored", 3310), ("Atrexis", 3311), ("ManaWraith", 3312)], "ShadeOfTheArchmage", optional=("LynTheIgnored",))
+fdun(2959, "City of Dalaran", [("ArcaneAnomaly", 3298), ("FelAncient", 3299), ("ManaDevourer", 3300), ("ManaElemental", 3301), ("UnstableSentinel", 3302), ("ShadeOfTheArchmage", 3303), ("LynTheIgnored", 3310), ("Atrexis", 3311), ("ManaWraith", 3312)], "ShadeOfTheArchmage", optional=("LynTheIgnored", "ManaWraith"))
+# Mana Wraith: in the client list, but never seen in a run (Felix, 23.11.2026) - optional.
 fdun(2970, "The Drowned City", [("ZulAlai", 3474), ("VarTaka", 3475), ("CaptainDreadrise", 3476), ("DeathlessGuardians", 3478), ("PrimevalElemental", 3511), ("Minloth", 3479)], "Minloth", optional=("PrimevalElemental",))
 fdun(3039, "Krol'dok Stronghold", [("SlavecrusherGrox", 3450), ("TwilightCommanderZarmok", 3452), ("HandlerAshka", 3453), ("Nargurk", 3449), ("OverseerMugg", 3451)], "OverseerMugg")
 # Order from the client data; final Blazeroar (last in order, confirmed by Felix, 22.11.2026).

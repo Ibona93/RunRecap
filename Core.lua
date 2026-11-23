@@ -18,6 +18,7 @@ ns.DEFAULTS = {
 	runs = {},              -- finished, completed runs (newest last, max. 20)
 	currentRun = nil,       -- the run in progress, saved continuously so /reload loses nothing
 	learned = {},           -- [itemID] = "mapID:bossKey", learned from sure loot sources
+	learnedNpc = {},        -- [npcID] = "mapID:bossKey", boss NPCs learned (Forever dungeons have no NPC data)
 	window = nil,           -- recap window position
 	probeActive = false,    -- developer probe (/recap probe) is recording
 	probe = {},             -- developer probe log lines
@@ -55,7 +56,10 @@ end
 -- Helpers around the WoW API
 -------------------------------------------------------------------------------
 
+-- The own name. Forever: UnitName gives the first name, chat lines the full name - the full
+-- name is learned from the first own loot line (GUID = UnitGUID("player")).
 function ns.MyName()
+	if ns.selfFullName then return ns.selfFullName end
 	local name = UnitName and UnitName("player")
 	return ns.Parse.ShortName(name)
 end
@@ -153,11 +157,6 @@ local function checkUnit(unit)
 	ns.Run.OnUnitState(run, name, dead)
 end
 
-local function creatureSeen(unit)
-	if not UnitGUID then return end
-	local guid = UnitGUID(unit)
-	if guid then ns.Run.OnCreatureGUID(guid) end
-end
 
 local function lootWindow()
 	local run = ns.Run.Current()
@@ -168,8 +167,6 @@ local function lootWindow()
 		if link and GetLootSourceInfo then
 			local guid = ns.TryCall(GetLootSourceInfo, slot)
 			local npc = ns.Parse.CreatureGUID(guid)
-			if guid then ns.Run.OnCreatureGUID(guid) end
-			run = ns.Run.Current()
 			slots[#slots + 1] = { link = link, npc = npc }
 		end
 	end
@@ -192,6 +189,9 @@ local function chatLoot(msg, sender, guid)
 	if not loot then return end
 	local who = loot.self and ns.MyName() or loot.player
 	if sender and sender ~= "" then who = ns.Parse.ShortName(sender) end
+	if loot.self and sender and sender ~= "" and guid and UnitGUID and guid == UnitGUID("player") then
+		ns.selfFullName = ns.Parse.ShortName(sender)
+	end
 	ns.Run.OnLoot(run, loot, who, classOfGUID(guid))
 end
 
@@ -293,9 +293,6 @@ end
 handlers.PLAYER_ALIVE = aliveAgain
 handlers.PLAYER_UNGHOST = aliveAgain
 
-function handlers.PLAYER_TARGET_CHANGED() creatureSeen("target") end
-function handlers.UPDATE_MOUSEOVER_UNIT() creatureSeen("mouseover") end
-function handlers.NAME_PLATE_UNIT_ADDED(unit) if unit then creatureSeen(unit) end end
 
 function handlers.PLAYER_REGEN_ENABLED()
 	if ns.Banner and ns.Banner.OnCombatEnd then ns.Banner.OnCombatEnd() end

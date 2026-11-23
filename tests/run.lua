@@ -271,8 +271,6 @@ do
 	for _, n in ipairs({ "Ibona Hexfang", "Albona Lichtwirker", "Tarosh Dolchhieb", "Ursabor Wunderwuchs", "Balerdroch Sheridan" }) do
 		R.SetPlayer(run, n, "WARLOCK")
 	end
-	R.OnCreatureGUID("Creature-0-6939-389-4711-11318-0000ABC")
-	check("first creature GUID remembers the instance copy", run.zoneUID == "4711")
 
 	-- trash before the first boss: green roll, own loot window says NPC 11318 (trash)
 	clock = 1100
@@ -352,9 +350,7 @@ do
 	clock = 2400
 	check("not ended before 30 minutes", not R.CheckTimeout() and ns.db.currentRun == run)
 	R.OnZone(inside)
-	check("back: resumed, 600 s pause left out", run.state == "active" and R.Elapsed(run) == 800 and run.checkCopy)
-	R.OnCreatureGUID("Creature-0-6939-389-4711-11319-0000ABD")
-	check("same copy after the return: same run", ns.db.currentRun == run and not run.checkCopy)
+	check("back: resumed, 600 s pause left out, same run", run.state == "active" and R.Elapsed(run) == 800 and ns.db.currentRun == run)
 
 	clock = 2500
 	R.OnEncounterEnd(run, 2735, "Bazzalan", 1)
@@ -397,11 +393,16 @@ do
 	R.OnInstanceReset()
 	check("reset while outside: aborted run dropped (no history entry)", ns.db.currentRun == nil and ns.db.runs[#ns.db.runs] == run)
 	local run3 = R.OnZone(inside)
-	R.OnCreatureGUID("Creature-0-6939-389-100-11318-0000ABC")
 	R.OnZone({ inInstance = false, dead = false })
 	R.OnZone(inside)
-	R.OnCreatureGUID("Creature-0-6939-389-200-11318-0000ABC")
-	check("back in a different copy: new run", ns.db.currentRun ~= run3 and ns.db.currentRun.zoneUID == "200")
+	check("not completed, out and back in: still the same run", ns.db.currentRun == run3 and run3.state == "active")
+	for _, e in ipairs({ { 2732, "Flintauge" }, { 2733, "Taragaman" }, { 2735, "Bazzalan" }, { 2734, "Jergosh" } }) do
+		R.OnEncounterEnd(run3, e[1], e[2], 1)
+	end
+	R.OnZone({ inInstance = false, dead = false })
+	R.OnZone(inside)
+	check("completed, left alive, back in: a new run, the old one kept", ns.db.currentRun ~= run3 and ns.db.runs[#ns.db.runs] == run3
+		and #ns.db.currentRun.kills == 0)
 	R.OnZone({ inInstance = true, instanceType = "party", mapID = 36, name = "Die Todesminen" })
 	check("other dungeon: new run there", ns.db.currentRun.mapID == 36)
 	ns.db.currentRun.lastSeen = clock
@@ -476,6 +477,52 @@ do
 	local ms = R.Summary(mr, true)
 	check("balance = gold + vendor value - repairs", ms.money == 1000 and ms.vendor == 118 and ms.repair == 900 and ms.balance == 218)
 	ns.SellPrice = nil
+	R.End("test")
+
+	-- Dalaran (23.11.2026): first names from the unit functions, full names in chat lines
+	clock = 60000
+	R.End("test")
+	local dal = R.OnZone({ inInstance = true, instanceType = "party", mapID = 2959, name = "Dalaran" })
+	R.SetPlayer(dal, "Ibona", "PALADIN")
+	R.SetPlayer(dal, "Anna", "WARLOCK")
+	local KNOCHEN = "|cnIQ3:|Hitem:273001::::::::30:1490:::::::::|h[Knochenhaufenblick]|h|r"
+	R.OnRollStart(dal, 901, KNOCHEN)
+	R.OnRoll(dal, ns.Parse.Roll(H(901) .. "Ihr habt \"Bedarf\" ausgewählt für: " .. KNOCHEN), "Ibona")
+	R.OnRoll(dal, ns.Parse.Roll(H(901) .. "Wurf für eigenen Bedarf: 22 für " .. KNOCHEN .. " von Ibona Lightgrave"), "Ibona")
+	R.OnRoll(dal, ns.Parse.Roll(H(901) .. "Wurf für Gold: 40 für " .. KNOCHEN .. " von Anna Kramer"), "Ibona")
+	R.OnRoll(dal, ns.Parse.Roll(H(901) .. "Gewonnen von Euch: " .. KNOCHEN), "Ibona")
+	R.OnLoot(dal, ns.Parse.Loot("Ihr erhaltet Beute: " .. KNOCHEN), "Ibona Lightgrave", "PALADIN")
+	check("Dalaran: first and full name are one player", dal.players["Ibona"] == nil and dal.players["Ibona Lightgrave"] == "PALADIN"
+		and dal.players["Anna"] == nil and dal.players["Anna Kramer"] == "WARLOCK")
+	check("Dalaran: item won by me and then looted = one item, rolls merged", #dal.items == 1 and dal.items[1].looter == "Ibona Lightgrave"
+		and dal.items[1].rolls["Ibona"] == nil and dal.items[1].rolls["Ibona Lightgrave"].choice == "need"
+		and dal.items[1].rolls["Ibona Lightgrave"].value == 22)
+	R.OnUnitState(dal, "Anna", true)
+	check("Dalaran: a death under the first name counts for the full name", dal.deaths["Anna Kramer"] == 1 and dal.deaths["Anna"] == nil)
+	check("two different players with the same first name are not merged", (function()
+		local t = { players = { Kim = false, ["Kim A"] = false, ["Kim B"] = false }, deaths = {}, deadNow = {}, bossDeaths = {}, items = {}, alias = {} }
+		R.SetPlayer(t, "Lee")
+		return t.players.Kim ~= nil and t.players["Kim A"] ~= nil
+	end)())
+
+	-- Dalaran: boss NPC IDs unknown -> roll timing stays, the NPC is learned as the boss
+	local ORB = "|cnIQ3:|Hitem:273052::::::::30:1490:::::::::|h[Schwerfällige Kugel]|h|r"
+	clock = 60100
+	R.OnEncounterEnd(dal, 3298, "Arkananomalie", 1)
+	R.OnRollStart(dal, 902, ORB)
+	R.OnLootWindow(dal, { { link = ORB, npc = 246020 } })
+	check("Forever: unknown NPC in the loot window does not turn boss loot into trash", dal.items[2].source == 1 and dal.items[2].sure)
+	check("Forever: NPC learned as that boss", ns.db.learnedNpc[246020] == "2959:ArcaneAnomaly")
+	clock = 60300
+	local ROBE = "|cnIQ3:|Hitem:273099::::::::30:1490:::::::::|h[Robe]|h|r"
+	R.OnLootWindow(dal, { { link = ROBE, npc = 246020 } })
+	R.OnLoot(dal, ns.Parse.Loot("Ihr erhaltet Beute: " .. ROBE), "Ibona Lightgrave")
+	check("Forever: later own loot from that NPC = that boss (sure)", dal.items[3].source == 1 and dal.items[3].sure)
+	R.OnLootWindow(dal, { { link = PERLE, npc = 999 } })
+	R.OnLoot(dal, ns.Parse.Loot("Ihr erhaltet Beute: " .. PERLE), "Ibona Lightgrave")
+	check("Forever: unknown NPC long after a kill = trash", dal.items[4].source == "trash")
+	check("Dalaran: Mana Wraith optional, 7 required bosses", select(2, ns.Dungeons.WingProgress(ns.DUNGEONS[2959].wings[1], {})) == 0
+		and select(3, ns.Dungeons.WingProgress(ns.DUNGEONS[2959].wings[1], {})) == 7)
 	R.End("test")
 	R.onComplete = nil
 end

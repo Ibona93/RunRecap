@@ -284,8 +284,6 @@ do
 	ok, err = pcall(fire, "PLAYER_ENTERING_WORLD", true, false)
 	local run = ns.db.currentRun
 	check("entering Ragefire starts a run with the group", ok and run and run.mapID == 389 and run.players["Tarosh Dolchhieb"] == "ROGUE", err)
-	pcall(fire, "PLAYER_TARGET_CHANGED")
-	check("target GUID remembers the instance copy", run.zoneUID == "4711")
 
 	clock = 5100
 	pcall(fire, "ENCOUNTER_START", 2732, "Flintauge", 1, 5)

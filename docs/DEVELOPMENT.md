@@ -58,10 +58,12 @@ The file is written on logout or `/reload`: `_forever_/WTF/Account/<ACCOUNT>/Sav
 | completed | `ns.Dungeons.WingProgress` of the boss's wing; the run keeps recording afterwards (end boss loot is rolled later) |
 | leave as ghost | run keeps going (`UnitIsDeadOrGhost("player")`) |
 | leave alive | paused, pause time not counted; alive again outside after a ghost run = pause too |
-| end | other instance, `INSTANCE_RESET_SUCCESS` while paused, 30 min paused, login ≥ 30 min after last activity, or a different instance copy after the return (zone UID field of a creature GUID) |
+| end | other instance, `INSTANCE_RESET_SUCCESS` while paused, 30 min paused, login ≥ 30 min after last activity; back in the same dungeon after a completed run (left alive) starts a new run. (The creature-GUID copy check was removed on 23.11.2026: it restarted a run in the middle of Dalaran.) |
 | history | completed runs → `RunRecapDB.runs` (last 20); aborted runs are dropped |
 
-Loot source, in this order: own loot window (`GetLootSourceInfo` → NPC → boss, else trash) · roll started ≤ 10 s after a kill → that boss, else trash · learned (`RunRecapDB.learned`, item ID → boss) · other players' direct loot ≤ 90 s after a kill → "probably" that boss, else trash. Only green or better items are stored; blue and better are shown by default. A finished roll and the following "X receives loot" line are one item (same item ID, winner, ≤ 300 s).
+Names: Forever's unit functions give the first name, chat lines the full name; a first name with exactly one matching full name is merged into it (`run.alias`).
+
+Loot source, in this order: own loot window (`GetLootSourceInfo` → NPC → boss from the data or learned in `RunRecapDB.learnedNpc`; unknown NPC = trash only where the dungeon's boss NPC IDs are known – the Forever dungeons have none, there an unknown NPC decides nothing and a roll right after a kill teaches NPC → boss) · roll started ≤ 10 s after a kill → that boss, else trash · learned (`RunRecapDB.learned`, item ID → boss) · other players' direct loot ≤ 90 s after a kill → "probably" that boss, else trash. Only green or better items are stored; blue and better are shown by default. A finished roll and the following "X receives loot" line are one item (same item ID, winner, ≤ 300 s).
 
 Deaths: `UnitIsDeadOrGhost` on `player`/`party1-4` at `PLAYER_DEAD`, `UNIT_HEALTH`, `UNIT_FLAGS`, counted once per dying (`run.deadNow`), feign death ignored. Deaths during an encounter are listed at that boss.
 
