@@ -267,8 +267,13 @@ function Run.Canon(run, name)
 	return run and run.alias and run.alias[name] or name
 end
 
+-- "Unbekannt"/"Unknown": the client doesn't know the name yet (UNKNOWNOBJECT)
+function Run.IsPlaceholder(name)
+	return name == nil or name == "" or name == UNKNOWNOBJECT or name == UNKNOWN
+end
+
 function Run.SetPlayer(run, name, class)
-	if not run or not name then return end
+	if not run or Run.IsPlaceholder(name) then return end
 	name = Run.Canon(run, name)
 	if class or run.players[name] == nil then run.players[name] = class or false end
 	reconcile(run)
@@ -290,13 +295,45 @@ end
 
 -- Unit state check (UNIT_HEALTH / UNIT_FLAGS / PLAYER_DEAD): counts a death once per dying.
 function Run.OnUnitState(run, name, dead)
-	if not run or not name then return end
+	if not run or Run.IsPlaceholder(name) then return end
 	name = Run.Canon(run, name)
 	if dead and not run.deadNow[name] then
 		run.deadNow[name] = true
 		Run.OnDeath(run, name)
+		Run.CheckGroupWipe(run)
 	elseif not dead and run.deadNow[name] then
 		run.deadNow[name] = nil
+		if not next(run.deadNow) then run.groupWiped = nil end
+	end
+end
+
+-- Current group (names as UnitName gives them), set by Core on roster changes.
+function Run.SetGroup(run, names)
+	if not run then return end
+	run.group = {}
+	for _, name in ipairs(names or {}) do
+		if not Run.IsPlaceholder(name) then run.group[name] = true end
+	end
+end
+
+--[[
+Wipe outside a boss fight (trash), Felix 23.11.2026: the whole group is dead, or all but one
+(the paladin in his bubble, the hunter playing dead) in a group of four or more. Counted once
+until everyone is alive again. Boss wipes come from ENCOUNTER_END.
+]]
+function Run.CheckGroupWipe(run)
+	if not run or run.state ~= "active" or run.encounter or run.groupWiped or not run.group then return end
+	local size, dead = 0, 0
+	for name in pairs(run.group) do
+		size = size + 1
+		-- first names from the unit functions; the full name may be known by now
+		if run.deadNow[Run.Canon(run, name)] then dead = dead + 1 end
+	end
+	if size == 0 then return end
+	if dead == size or (size >= 4 and dead >= size - 1) then
+		run.groupWiped = true
+		run.wipes = (run.wipes or 0) + 1
+		changed(run)
 	end
 end
 
@@ -332,25 +369,13 @@ function Run.BossProgress(run)
 	return done, total
 end
 
-function Run.OnEncounterEnd(run, encounterID, name, success, now)
-	if not run or run.state ~= "active" then return end
-	now = now or ns.Now()
-	local boss, wing = bossFor(run, encounterID, name)
+local function addKill(run, boss, wing, name, now, extra)
 	local at = Run.Elapsed(run, now)
-	local enc = run.encounter
-	local fight = (enc and enc.id == encounterID) and math.max(0, at - enc.at) or nil
-	run.encounter = nil
-	if success ~= 1 and success ~= true then
-		run.wipes = run.wipes + 1
-		run.bossWipes[boss.key] = (run.bossWipes[boss.key] or 0) + 1
-		changed(run)
-		return
-	end
-	if run.killed[boss.key] then return end
 	local kill = {
-		key = boss.key, name = name, encounterID = encounterID, wing = wing and wing.key,
-		at = at, fight = fight, final = boss.final, opt = boss.opt, time = now,
+		key = boss.key, name = name, wing = wing and wing.key,
+		at = at, final = boss.final, opt = boss.opt, time = now,
 	}
+	for k, v in pairs(extra or {}) do kill[k] = v end
 	run.kills[#run.kills + 1] = kill
 	run.killed[boss.key] = #run.kills
 	run.lastKill = #run.kills
@@ -370,6 +395,46 @@ function Run.OnEncounterEnd(run, encounterID, name, success, now)
 	end
 	changed(run)
 	return kill
+end
+
+function Run.OnEncounterEnd(run, encounterID, name, success, now)
+	if not run or run.state ~= "active" then return end
+	now = now or ns.Now()
+	local boss, wing = bossFor(run, encounterID, name)
+	local at = Run.Elapsed(run, now)
+	local enc = run.encounter
+	local fight = (enc and enc.id == encounterID) and math.max(0, at - enc.at) or nil
+	run.encounter = nil
+	if success ~= 1 and success ~= true then
+		run.groupWiped = next(run.deadNow) ~= nil or nil
+		run.wipes = run.wipes + 1
+		run.bossWipes[boss.key] = (run.bossWipes[boss.key] or 0) + 1
+		changed(run)
+		return
+	end
+	local index = run.killed[boss.key]
+	if index then
+		-- already known from the dead boss itself: the encounter adds the fight time
+		local kill = run.kills[index]
+		if kill.fromNpc then
+			kill.fight, kill.encounterID, kill.fromNpc = kill.fight or fight, encounterID, nil
+			if name then kill.name = name end
+			changed(run)
+		end
+		return
+	end
+	return addKill(run, boss, wing, name, now, { encounterID = encounterID, fight = fight })
+end
+
+-- A known boss of this dungeon is dead (its corpse, its loot window) but no ENCOUNTER_END
+-- came - it happens (Elektrokutionator 6000, Gnomeregan, 23.11.2026). Counts as the kill.
+function Run.OnBossDead(run, npc, name, now)
+	if not run or run.state ~= "active" or not npc then return end
+	local mapID, _, wing, boss = ns.Dungeons.FindNpc(npc)
+	if not boss or mapID ~= run.mapID or run.killed[boss.key] then return end
+	-- a fight is running: ENCOUNTER_END follows and brings the fight time
+	if run.encounter and run.encounter.key == boss.key then return end
+	return addKill(run, boss, wing, name or boss.key, now or ns.Now(), { fromNpc = true })
 end
 
 -------------------------------------------------------------------------------
@@ -470,6 +535,10 @@ function Run.OnLootWindow(run, slots, now)
 	if not run or run.state ~= "active" then return end
 	now = now or ns.Now()
 	run.loot = run.loot or {}
+	-- loot of a known boss without a recorded kill: the kill is missing, not the boss
+	for _, slot in ipairs(slots) do
+		if slot.npc then Run.OnBossDead(run, slot.npc, slot.npcName, now) end
+	end
 	for _, slot in ipairs(slots) do
 		local itemID = ns.Parse.ItemID(slot.link)
 		if itemID and slot.npc then
@@ -636,15 +705,36 @@ tooltips). Only increases while the run is active count; a lower value (repaired
 hearthstone trip to a vendor) just becomes the new base. resetBase: gear was changed, take the
 value as the new base without counting.
 ]]
-function Run.OnRepairSample(run, cost, resetBase)
-	if not run or not cost then return end
-	local last = run.repairLast
-	run.repairLast = cost
-	if resetBase or not last or run.state ~= "active" then return end
-	if cost > last then
-		run.repair = (run.repair or 0) + (cost - last)
+--[[
+Repair costs per equipment slot: `slots` = { [slot] = { cost = copper, id = itemID } } for the
+slots the client could read. Outside a vendor costs only go up, so a slot counts only what
+goes above its highest value so far - a slot that reads low for a moment (tooltip not ready)
+can't be counted twice (Gnomeregan 23.11.2026: 40s instead of 20s). Another item in the slot,
+`reset` (gear change, vendor closed) or a run that isn't active only move the base.
+]]
+function Run.OnRepairSample(run, slots, reset)
+	if not run or type(slots) ~= "table" then return end
+	run.repairBase = run.repairBase or {}
+	local base, active, added = run.repairBase, run.state == "active" and not reset, 0
+	for slot, v in pairs(slots) do
+		local b = base[slot]
+		if not active or not b or b.id ~= v.id then
+			base[slot] = { cost = v.cost, id = v.id }
+		elseif v.cost > b.cost then
+			added = added + v.cost - b.cost
+			b.cost = v.cost
+		end
+	end
+	if added > 0 then
+		run.repair = (run.repair or 0) + added
 		changed(run)
 	end
+end
+
+-- Gold of a quest handed in inside the instance (not the reward items), Felix 23.11.2026
+function Run.OnQuestMoney(run, copper)
+	if type(copper) ~= "number" or copper <= 0 then return end
+	Run.OnMoney(run, copper)
 end
 
 function Run.OnMoney(run, copper)
@@ -715,10 +805,12 @@ function Run.Summary(run, showGreen)
 	s.balance = s.money + s.vendor - s.repair
 
 	s.deaths, s.noDeaths = {}, {}
-	for name, n in pairs(run.deaths) do s.deaths[#s.deaths + 1] = { name = name, n = n } end
+	for name, n in pairs(run.deaths) do
+		if not Run.IsPlaceholder(name) then s.deaths[#s.deaths + 1] = { name = name, n = n } end
+	end
 	table.sort(s.deaths, function(a, b) if a.n ~= b.n then return a.n > b.n end return a.name < b.name end)
 	for name in pairs(run.players) do
-		if not run.deaths[name] then s.noDeaths[#s.noDeaths + 1] = name end
+		if not run.deaths[name] and not Run.IsPlaceholder(name) then s.noDeaths[#s.noDeaths + 1] = name end
 	end
 	table.sort(s.noDeaths)
 

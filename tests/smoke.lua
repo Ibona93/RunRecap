@@ -406,7 +406,7 @@ do
 		and T[1].Value.__text:find("Mr. Smite", 1, true) ~= nil and T[4]:IsShown() and not f2.Highlights.Empty:IsShown(),
 		tostring(T[1].key) .. "," .. tostring(T[2].key) .. "," .. tostring(T[3].key) .. "," .. tostring(T[4].key))
 	check("singular/plural: 1 Wipe, 3 Wipes, 0 Wipes", ns.WipesText(1) == "1 Wipe" and ns.WipesText(3) == "3 Wipes" and ns.WipesText(0) == "0 Wipes"
-		and T[1].Value.__text:find("1 Wipe", 1, true) ~= nil and not T[1].Value.__text:find("1 Wipes", 1, true))
+		and T[1].Label.__text:find("1 Wipe", 1, true) ~= nil and not T[1].Label.__text:find("1 Wipes", 1, true))
 	check("highlights: compact rows", (rawget(T[1], "__h") or 0) >= 30 and (rawget(T[1], "__h") or 99) <= 36)
 	local lines = table.concat(ns.Recap.FactLines(), "\n")
 	check("facts: every player without a death in its own row", lines:find("Bram|r|0", 1, true) ~= nil and lines:find("Lyss|r|0", 1, true) ~= nil

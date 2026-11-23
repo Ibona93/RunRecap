@@ -245,6 +245,12 @@ function Parse.Clock(seconds)
 	return ("%d:%02d"):format(m, s)
 end
 
+-- seconds -> "m:ss" also past an hour ("66:12") - for narrow columns
+function Parse.Minutes(seconds)
+	seconds = math.max(0, math.floor((seconds or 0) + 0.5))
+	return ("%d:%02d"):format(math.floor(seconds / 60), seconds % 60)
+end
+
 local COIN = "|TInterface\\MoneyFrame\\UI-%sIcon:0:0:2:0|t"
 -- copper -> "1[gold] 23[silver] 45[copper]" with the game's coin icons
 function Parse.Coins(copper)

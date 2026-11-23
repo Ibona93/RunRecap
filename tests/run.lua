@@ -463,20 +463,92 @@ do
 	R.OnRoll(mr, ns.Parse.Roll(H(78) .. "Gewonnen von Euch: " .. PERLE), "Ibona Hexfang")
 	R.OnLoot(mr, ns.Parse.Loot("Ihr erhaltet Beute: " .. PERLE), "Ibona Hexfang")
 	check("vendor value: item won with greed counts", mr.vendor == 118)
-	R.OnRepairSample(mr, 500)
-	R.OnRepairSample(mr, 900)
-	R.OnRepairSample(mr, 1400, true)
-	R.OnRepairSample(mr, 1600)
-	check("repairs: only increases count, gear change only moves the base", mr.repair == 600)
+	local function rs(a, b, idA) return { [1] = { cost = a, id = idA or 100 }, [5] = { cost = b, id = 200 } } end
+	R.OnRepairSample(mr, rs(200, 300))
+	R.OnRepairSample(mr, rs(400, 500))
+	check("repairs: increases per slot count", mr.repair == 400)
+	R.OnRepairSample(mr, { [5] = { cost = 500, id = 200 } })
+	R.OnRepairSample(mr, rs(400, 500))
+	check("repairs: a slot that can't be read for a moment is not counted twice", mr.repair == 400)
+	R.OnRepairSample(mr, rs(100, 500))
+	R.OnRepairSample(mr, rs(400, 500))
+	check("repairs: a slot reading low for a moment is not counted twice", mr.repair == 400)
+	R.OnRepairSample(mr, rs(900, 500, 101))
+	R.OnRepairSample(mr, rs(1000, 600, 101))
+	check("repairs: another item in the slot only moves the base", mr.repair == 600)
+	R.OnRepairSample(mr, rs(1500, 600, 101), true)
+	check("repairs: gear change / vendor only moves the base", mr.repair == 600)
 	R.Pause(mr)
-	R.OnRepairSample(mr, 0)
+	R.OnRepairSample(mr, rs(0, 0, 101))
 	R.Resume(mr)
-	R.OnRepairSample(mr, 300)
+	R.OnRepairSample(mr, rs(200, 100, 101))
 	check("repaired at a vendor while outside: new base, nothing lost", mr.repair == 900)
 	R.OnMoney(mr, 1000)
 	local ms = R.Summary(mr, true)
 	check("balance = gold + vendor value - repairs", ms.money == 1000 and ms.vendor == 118 and ms.repair == 900 and ms.balance == 218)
+	R.OnQuestMoney(mr, 250)
+	R.OnQuestMoney(mr, 0)
+	check("quest gold inside the instance counts as gold", mr.money == 1250)
 	ns.SellPrice = nil
+	R.End("test")
+
+	-- Gnomeregan 23.11.2026: no ENCOUNTER_END for Elektrokutionator 6000, wipe on trash,
+	-- "Unbekannt" in the group
+	clock = 60000
+	UNKNOWNOBJECT = "Unbekannt" -- luacheck: ignore
+	local gr = R.OnZone({ inInstance = true, instanceType = "party", mapID = 90, name = "Gnomeregan" })
+	R.SetPlayer(gr, "Unbekannt", "ROGUE")
+	R.SetPlayer(gr, "Ibona", "PALADIN")
+	R.SetGroup(gr, { "Ibona", "Lass", "Dan", "Testo", "Shacos", "Unbekannt" })
+	gr.alias = { Lass = "Lass Mi" } -- learned from a chat line meanwhile
+	R.OnUnitState(gr, "Unbekannt", true)
+	check("placeholder name: not a player, no death", gr.players.Unbekannt == nil and gr.deaths.Unbekannt == nil)
+	R.OnUnitState(gr, "Lass", true)
+	R.OnUnitState(gr, "Dan", true)
+	R.OnUnitState(gr, "Testo", true)
+	check("3 of 5 dead: no wipe yet", gr.wipes == 0)
+	R.OnUnitState(gr, "Shacos", true)
+	check("trash wipe: all but one dead (paladin bubble) counts, full names too", gr.wipes == 1 and gr.deadNow["Lass Mi"])
+	R.OnUnitState(gr, "Ibona", true)
+	check("trash wipe: counted once", gr.wipes == 1)
+	for _, n in ipairs({ "Ibona", "Lass", "Dan", "Testo" }) do R.OnUnitState(gr, n, false) end
+	check("trash wipe: not over while someone is still dead", gr.groupWiped == true)
+	R.OnUnitState(gr, "Shacos", false)
+	R.OnUnitState(gr, "Shacos", true)
+	R.OnUnitState(gr, "Lass", true)
+	check("alive again, two die: no new wipe", gr.wipes == 1)
+	R.OnUnitState(gr, "Shacos", false)
+	R.OnUnitState(gr, "Lass", false)
+	clock = clock + 300
+	R.OnLootWindow(gr, { { link = PERLE, npc = 6235, npcName = "Elektrokutionator 6000" } })
+	local ek = gr.kills[gr.killed.Electrocutioner]
+	check("loot window of a boss without ENCOUNTER_END: the kill is added", ek ~= nil and ek.name == "Elektrokutionator 6000"
+		and ek.fromNpc and ek.at == 300 and gr.kills[#gr.kills] == ek)
+	R.OnRollStart(gr, 901, PERLE)
+	local leg
+	for _, it in ipairs(gr.items) do if it.historyID == 901 then leg = it end end
+	check("its loot belongs to that boss", leg and leg.source == gr.killed.Electrocutioner and leg.sure)
+	clock = clock + 60
+	R.OnEncounterStart(gr, 2771, "Meuteverprügler 9-60")
+	R.OnBossDead(gr, 6229, "Meuteverprügler 9-60")
+	check("dead boss during its fight: wait for ENCOUNTER_END", gr.killed.CrowdPummeler == nil)
+	clock = clock + 26
+	R.OnEncounterEnd(gr, 2771, "Meuteverprügler 9-60", 1)
+	check("then the normal kill with fight time", gr.kills[gr.killed.CrowdPummeler].fight == 26)
+	R.OnBossDead(gr, 7361, "Grubbis")
+	clock = clock + 5
+	R.OnEncounterEnd(gr, 2768, "Grubbis", 1)
+	local gk = gr.kills[gr.killed.Grubbis]
+	check("dead boss seen first, ENCOUNTER_END later: one kill, fight added", #gr.kills == 3 and gk.encounterID == 2768 and not gk.fromNpc)
+	R.OnBossDead(gr, 1234, "Irgendwer")
+	check("other NPCs: nothing", #gr.kills == 3)
+	local gs = R.Summary(gr, true)
+	local listed = false
+	for _, n in ipairs(gs.noDeaths) do if n == "Unbekannt" then listed = true end end
+	gr.players.Unbekannt = "ROGUE" -- runs saved before the fix
+	for _, n in ipairs(R.Summary(gr, true).noDeaths) do if n == "Unbekannt" then listed = true end end
+	check("summary: no \"Unbekannt\"", not listed)
+	check("kill minute past an hour: 66:12", ns.Parse.Minutes(3972) == "66:12" and ns.Parse.Minutes(59) == "0:59")
 	R.End("test")
 
 	-- Dalaran (23.11.2026): first names from the unit functions, full names in chat lines

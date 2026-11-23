@@ -270,7 +270,7 @@ local function fillBoss(r, run, entry, label)
 	r.entry = entry
 	if entry then
 		local kill = entry.kill
-		r.Minute:SetText(ns.Parse.Clock(kill.at))
+		r.Minute:SetText(ns.Parse.Minutes(kill.at))
 		r.Name:SetText(kill.name or "?")
 		r.Name:SetTextColor(1, 1, 1)
 		r.Fight:SetText(kill.fight and l.FIGHT:format(ns.Parse.Clock(kill.fight)) or "")
@@ -388,27 +388,30 @@ local function renderFacts(run, s)
 	Recap.RenderHighlights(run, s, RIGHT_H - factsH - 6)
 end
 
--- Text for one highlight entry (Run.Highlights): label, value line, icon.
+-- Text for one highlight entry (Run.Highlights): label line (with the number, it is short),
+-- name line (long names get the full width), icon.
 function Recap.HighlightText(run, h)
 	local l = L()
 	local clock = ns.Parse.Clock
+	local function lbl(text, value) return text .. "  |cffffffff" .. value .. "|r" end
 	if h.key == "fastest" then
-		return l.HL_FASTEST, (h.name or "?") .. " · " .. clock(h.value), HL_ICONS.fastest
+		return lbl(l.HL_FASTEST, clock(h.value)), h.name or "?", HL_ICONS.fastest
 	elseif h.key == "hardest" then
 		local v = h.wipes and ns.WipesText(h.wipes) or clock(h.value)
-		return l.HL_HARDEST, (h.name or "?") .. " · " .. v, HL_ICONS.hardest
+		return lbl(l.HL_HARDEST, v), h.name or "?", HL_ICONS.hardest
 	elseif h.key == "loot" then
-		return l.HL_MOST_LOOT, playerName(run, h.name) .. " · " .. h.value, HL_ICONS.loot
+		return lbl(l.HL_MOST_LOOT, h.value), playerName(run, h.name), HL_ICONS.loot
 	elseif h.key == "deaths" then
-		return l.HL_MOST_DEATHS, playerName(run, h.name) .. " · " .. h.value, HL_ICONS.deaths
+		return lbl(l.HL_MOST_DEATHS, h.value), playerName(run, h.name), HL_ICONS.deaths
 	elseif h.key == "lucky" then
-		return l.HL_LUCKY, playerName(run, h.name) .. " · " .. choiceText(h.choice, h.value), HL_ICONS.lucky
+		return lbl(l.HL_LUCKY, choiceText(h.choice, h.value)), playerName(run, h.name), HL_ICONS.lucky
 	elseif h.key == "unlucky" then
-		return l.HL_UNLUCKY, playerName(run, h.name) .. " · " .. h.value .. "× " .. l.ROLL_NEED, HL_ICONS.unlucky
+		return lbl(l.HL_UNLUCKY, h.value .. "× " .. l.ROLL_NEED), playerName(run, h.name), HL_ICONS.unlucky
 	elseif h.key == "item" then
 		local item = h.item
 		local name = "|c" .. W.QualityHex(item.quality) .. "[" .. (ns.Parse.ItemName(item.link) or "?") .. "]|r"
-		return l.HL_BEST_ITEM, name .. (item.looter and (" · " .. playerName(run, item.looter)) or ""), itemIcon(item.itemID)
+		return item.looter and lbl(l.HL_BEST_ITEM, playerName(run, item.looter)) or l.HL_BEST_ITEM, name,
+			itemIcon(item.itemID)
 	end
 	return "?", "", nil
 end

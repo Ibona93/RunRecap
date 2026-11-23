@@ -83,37 +83,46 @@ function ns.SellPrice(link)
 	return tonumber(info[11]) or 0
 end
 
--- Current repair cost of the equipped gear (copper), from the item tooltips - works anywhere,
--- not only at a vendor. nil if the client can't tell.
+-- Repair cost of each equipped item (copper), from the item tooltips - works anywhere, not
+-- only at a vendor: { [slot] = { cost, id } }. Slots the client can't read are left out.
 local scanTip
-function ns.RepairCost()
-	local total, known = 0, false
+local function slotRepairCost(slot)
+	if C_TooltipInfo and C_TooltipInfo.GetInventoryItem then
+		local data = ns.TryCall(C_TooltipInfo.GetInventoryItem, "player", slot)
+		if type(data) == "table" and type(data.repairCost) == "number" then return data.repairCost end
+	end
+	if not CreateFrame then return nil end
+	if not scanTip then
+		scanTip = CreateFrame("GameTooltip", "RunRecapScanTooltip", nil, "GameTooltipTemplate")
+	end
+	scanTip:SetOwner(UIParent, "ANCHOR_NONE")
+	local ok, _, _, cost = pcall(scanTip.SetInventoryItem, scanTip, "player", slot)
+	scanTip:Hide()
+	if ok and type(cost) == "number" then return cost end
+	return nil
+end
+
+function ns.RepairCosts()
+	local slots = {}
 	for slot = 1, 19 do
-		local cost
-		if C_TooltipInfo and C_TooltipInfo.GetInventoryItem then
-			local data = ns.TryCall(C_TooltipInfo.GetInventoryItem, "player", slot)
-			if type(data) == "table" then cost = data.repairCost end
-		end
-		if cost == nil and CreateFrame then
-			if not scanTip then
-				scanTip = CreateFrame("GameTooltip", "RunRecapScanTooltip", nil, "GameTooltipTemplate")
-			end
-			scanTip:SetOwner(UIParent, "ANCHOR_NONE")
-			local ok, _, _, c = pcall(scanTip.SetInventoryItem, scanTip, "player", slot)
-			if ok then cost = c end
-			scanTip:Hide()
-		end
-		if type(cost) == "number" then
-			total = total + cost
-			known = true
+		local id = GetInventoryItemID and GetInventoryItemID("player", slot)
+		if id then
+			local cost = slotRepairCost(slot)
+			if cost then slots[slot] = { cost = cost, id = id } end
 		end
 	end
+	return slots
+end
+
+function ns.RepairCost()
+	local total, known = 0, false
+	for _, v in pairs(ns.RepairCosts()) do total, known = total + v.cost, true end
 	return known and total or nil
 end
 
-local function sampleRepair(resetBase)
+local function sampleRepair(reset)
 	local run = ns.Run.Current()
-	if run then ns.Run.OnRepairSample(run, ns.RepairCost(), resetBase) end
+	if run then ns.Run.OnRepairSample(run, ns.RepairCosts(), reset) end
 end
 
 local function classOfGUID(guid)
@@ -136,13 +145,16 @@ end
 local function updateRoster()
 	local run = ns.Run.Current()
 	if not run or not UnitName then return end
+	local group = {}
 	for _, unit in ipairs({ "player", "party1", "party2", "party3", "party4" }) do
 		local name = UnitName(unit)
-		if name and name ~= "" and (not UnitExists or UnitExists(unit)) then
+		if not ns.Run.IsPlaceholder(name) and (not UnitExists or UnitExists(unit)) then
 			local class = UnitClass and select(2, UnitClass(unit))
 			ns.Run.SetPlayer(run, name, class)
+			group[#group + 1] = name
 		end
 	end
+	ns.Run.SetGroup(run, group)
 end
 
 local UNITS = { player = true, party1 = true, party2 = true, party3 = true, party4 = true }
@@ -167,7 +179,9 @@ local function lootWindow()
 		if link and GetLootSourceInfo then
 			local guid = ns.TryCall(GetLootSourceInfo, slot)
 			local npc = ns.Parse.CreatureGUID(guid)
-			slots[#slots + 1] = { link = link, npc = npc }
+			-- the name of the dead NPC, if it is the target (for a kill without ENCOUNTER_END)
+			local npcName = guid and UnitGUID and UnitGUID("target") == guid and UnitName("target") or nil
+			slots[#slots + 1] = { link = link, npc = npc, npcName = npcName }
 		end
 	end
 	ns.Run.OnLootWindow(run, slots)
@@ -278,7 +292,24 @@ function handlers.PLAYER_DEAD()
 	checkUnit("player")
 	sampleRepair()
 end
-function handlers.UNIT_HEALTH(unit) checkUnit(unit) end
+-- a dead boss in sight (target, focus, nameplate, mouseover) is a kill, even if no
+-- ENCOUNTER_END comes (Elektrokutionator 6000)
+local function checkBoss(unit)
+	local run = ns.Run.Current()
+	if not run or not unit or UNITS[unit] or not UnitGUID or not UnitIsDead then return end
+	local npc = ns.Parse.CreatureGUID(UnitGUID(unit))
+	if npc and UnitIsDead(unit) then ns.Run.OnBossDead(run, npc, UnitName(unit)) end
+end
+
+function handlers.UNIT_HEALTH(unit)
+	checkUnit(unit)
+	checkBoss(unit)
+end
+function handlers.PLAYER_TARGET_CHANGED() checkBoss("target") end
+
+function handlers.QUEST_TURNED_IN(_, _, money)
+	ns.Run.OnQuestMoney(ns.Run.Current(), money)
+end
 handlers.UNIT_FLAGS = handlers.UNIT_HEALTH
 
 local function aliveAgain()
