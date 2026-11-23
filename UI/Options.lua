@@ -53,8 +53,12 @@ local function build()
 	end)
 	green:SetPoint("TOPLEFT", auto, "BOTTOMLEFT", 0, -26)
 
+	local minimap = W.Check(panel, L.OPT_MINIMAP, function() return ns.MinimapButton.IsShown() end,
+		function(v) ns.MinimapButton.SetShown(v) end)
+	minimap:SetPoint("TOPLEFT", green, "BOTTOMLEFT", 0, -4)
+
 	local skinLabel = W.Text(panel, ns.Fonts.Game(12), { 1, 1, 1 })
-	skinLabel:SetPoint("TOPLEFT", green, "BOTTOMLEFT", 4, -22)
+	skinLabel:SetPoint("TOPLEFT", minimap, "BOTTOMLEFT", 4, -22)
 	skinLabel:SetWidth(130)
 	skinLabel:SetText(L.OPT_SKIN)
 	local skinDrop
@@ -133,7 +137,7 @@ local function build()
 
 	panel:SetScript("OnShow", refreshSound)
 	if ns.db then refreshSound() end
-	panel.Auto, panel.Green, panel.SoundButton, panel.Play, panel.Preview, panel.SkinDrop = auto, green, soundButton, play, preview, skinDrop
+	panel.Auto, panel.Green, panel.Minimap, panel.SoundButton, panel.Play, panel.Preview, panel.SkinDrop = auto, green, minimap, soundButton, play, preview, skinDrop
 
 	if Settings and Settings.RegisterCanvasLayoutCategory and Settings.RegisterAddOnCategory then
 		local ok, cat = pcall(Settings.RegisterCanvasLayoutCategory, panel, L.ADDON_TITLE)
@@ -145,7 +149,7 @@ local function build()
 	end
 	-- Fallback: standalone window
 	container = W.NativeWindow("RunRecapOptionsWindow", UIParent)
-	container:SetSize(660, 440)
+	container:SetSize(660, 470)
 	container:SetPoint("CENTER")
 	container:SetFrameStrata("DIALOG")
 	container:EnableMouse(true)
@@ -156,7 +160,7 @@ local function build()
 	local inset = W.Child(container, "Inset")
 	if inset then inset:Hide() end
 	W.SetTitle(container, L.ADDON_TITLE)
-	W.SetPortrait(container, "Interface\\Icons\\INV_Box_02")
+	W.SetPortrait(container, ns.ICON)
 	W.CloseOnEscape(container)
 	panel:SetParent(container)
 	panel:SetPoint("TOPLEFT", 4, -60)
@@ -165,7 +169,21 @@ local function build()
 	container:Hide()
 end
 
+-- In combat the settings window stays closed (taint): it opens once the fight is over.
+local afterCombat
 function Options.Open()
+	if InCombatLockdown and InCombatLockdown() then
+		if not afterCombat then
+			afterCombat = CreateFrame("Frame")
+			afterCombat:SetScript("OnEvent", function(self)
+				self:UnregisterEvent("PLAYER_REGEN_ENABLED")
+				Options.Open()
+			end)
+		end
+		afterCombat:RegisterEvent("PLAYER_REGEN_ENABLED")
+		ns.Print(ns.L.OPT_AFTER_COMBAT)
+		return
+	end
 	if not panel then build() end
 	if category and Settings and Settings.OpenToCategory then
 		local id = category.GetID and category:GetID() or category.ID

@@ -117,6 +117,7 @@ _G.GetLocale = function() return "deDE" end
 _G.GetBuildInfo = function() return "1.60.1", "70707", "Nov 4 2026", 16001 end
 _G.SlashCmdList = {}
 _G.unpack = _G.unpack or table.unpack
+_G.strmatch = string.match
 _G.strsplit = function(sep, str)
 	local out = {}
 	for part in (str .. sep):gmatch("(.-)%" .. sep) do out[#out + 1] = part end
@@ -162,7 +163,7 @@ do
 		if file then listed[(file:gsub("\\", "/"))] = true end
 	end
 	local missing = {}
-	local p = io.popen('find . -name "*.lua" -not -path "./tests/*" -not -path "./.git/*" -not -name ".luacheckrc"')
+	local p = io.popen('find . -name "*.lua" -not -path "./tests/*" -not -path "./.git/*" -not -path "./Libs/*" -not -name ".luacheckrc"')
 	if p then
 		for path in p:lines() do
 			path = path:gsub("^%./", "")
@@ -477,6 +478,48 @@ do
 	check("/recap tour restarts the introduction", tour:IsShown() and ns.Tour.Frame().page == 1)
 	local panel = ns.Options.Panel()
 	check("options: buttons for introduction and news, checkbox", panel.Tour and panel.News and panel.NewsCheck)
+end
+
+print("Minimap button")
+do
+	local ldb = LibStub:NewLibrary("LibDataBroker-1.1", 1)
+	function ldb:NewDataObject(name, obj) self.name, self.obj = name, obj return obj end
+	local icon = LibStub:NewLibrary("LibDBIcon-1.0", 1)
+	function icon:Register(name, obj, db) self.name, self.obj, self.db, self.shown = name, obj, db, not db.hide end
+	function icon:Show() self.shown = true end
+	function icon:Hide() self.shown = false end
+	ns.db.minimap = nil
+	local ok, err = pcall(ns.MinimapButton.Init)
+	check("registered with LibDBIcon, settings in RunRecapDB.minimap", ok and icon.name == "RunRecap" and icon.db == ns.db.minimap
+		and icon.shown and ldb.obj.icon == ns.ICON and ldb.obj.type == "launcher", err)
+	local opened = 0
+	local oldOpen = ns.Options.Open
+	ns.Options.Open = function() opened = opened + 1 end
+	ldb.obj.OnClick(nil, "RightButton")
+	check("right-click: options", opened == 1)
+	ns.Options.Open = oldOpen
+	if ns.Recap.IsShown() then ns.Recap.Hide() end
+	ldb.obj.OnClick(nil, "LeftButton")
+	check("left-click: recap of the last run", ns.Recap.IsShown() and ns.Recap.Frame().run == ns.Run.Latest())
+	ldb.obj.OnClick(nil, "LeftButton")
+	check("left-click again: closed", not ns.Recap.IsShown())
+	local lines = {}
+	ldb.obj.OnTooltipShow({ AddLine = function(_, t) lines[#lines + 1] = t end })
+	check("tooltip: title, last run, both clicks", lines[1] == ns.L.ADDON_TITLE and lines[2]:find("Ragefireabgrund", 1, true) ~= nil
+		and lines[4] == ns.L.MINIMAP_LEFT and lines[5] == ns.L.MINIMAP_RIGHT, table.concat(lines, " / "))
+	local panel = ns.Options.Panel()
+	panel.Minimap:SetChecked(false)
+	panel.Minimap:GetScript("OnClick")(panel.Minimap)
+	check("options checkbox hides the button (saved)", not icon.shown and ns.db.minimap.hide == true)
+	panel.Minimap:SetChecked(true)
+	panel.Minimap:GetScript("OnClick")(panel.Minimap)
+	check("and shows it again", icon.shown and ns.db.minimap.hide == false)
+	local combat = true
+	_G.InCombatLockdown = function() return combat end
+	local chatBefore = #chat
+	pcall(ns.Options.Open)
+	check("options in combat: not opened now, note in chat", #chat == chatBefore + 1)
+	combat = false
 end
 
 print(failures == 0 and "\nall smoke checks passed" or ("\n" .. failures .. " smoke checks failed"))

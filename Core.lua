@@ -20,6 +20,7 @@ ns.DEFAULTS = {
 	learned = {},           -- [itemID] = "mapID:bossKey", learned from sure loot sources
 	learnedNpc = {},        -- [npcID] = "mapID:bossKey", boss NPCs learned (Forever dungeons have no NPC data)
 	window = nil,           -- recap window position
+	minimap = { hide = false }, -- minimap button (LibDBIcon: hide, minimapPos)
 	probeActive = false,    -- developer probe (/recap probe) is recording
 	probe = {},             -- developer probe log lines
 }

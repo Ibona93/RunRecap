@@ -8,6 +8,12 @@
 ## Version: 0.1.0
 ## SavedVariables: RunRecapDB
 ## Category: Dungeons
+## IconTexture: Interface\AddOns\RunRecap\Media\Icon
+
+Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
 
 Init.lua
 
@@ -38,6 +44,7 @@ UI\Widgets.lua
 UI\Banner.lua
 UI\Recap.lua
 UI\Options.lua
+UI\Minimap.lua
 UI\Demo.lua
 UI\WhatsNew.lua
 UI\Tour.lua

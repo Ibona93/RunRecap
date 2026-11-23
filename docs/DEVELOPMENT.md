@@ -100,11 +100,13 @@ Offline tests can't replace the game. Before testing, enter `/console taintLog 1
 | 11 | Reset the instance after a run / enter a fresh copy | old run ends, new run starts |
 | 12 | `/recap` after a completed run; `/recap` with none | toggles the recap; "No recap yet" |
 | 13 | Taint log after the dungeon | no lines with RunRecap |
+| 14 | Minimap button: left-click, right-click, drag, hide in the options, tooltip | recap of the last run; options (after combat if in combat); position kept after /reload; hidden after /reload |
 
 ## Files
 
 ```
-RunRecap.toc        Interface 16001, SavedVariables RunRecapDB
+RunRecap.toc        Interface 16001, SavedVariables RunRecapDB, IconTexture Media/Icon
+Libs/               LibStub, CallbackHandler-1.0, LibDataBroker-1.1, LibDBIcon-1.0 (copied from BugSack, runs on Forever; not linted, not in the TOC check)
 Init.lua            namespace, version, locale registry, helpers (Print, Debug, MergeDefaults …)
 Locales/*.lua       UI texts in 10 languages (enUS is the base and fallback)
 Core.lua            defaults, locale selection, saved variables, events -> run logic, /recap
@@ -117,7 +119,9 @@ UI/Fonts.lua        font objects: game font (skin "blizzard", options), Philosop
 UI/Widgets.lua      skins (native Blizzard templates with fallbacks / dark & gold), dropdown look, colours, Escape handling, popup menu
 UI/Banner.lua       success sound + banner, then the recap (after combat)
 UI/Recap.lua        recap window, one per skin (bosses & loot, run facts, highlights box) with tooltips
-UI/Options.lua      options page (Settings → AddOns, fallback window)
+UI/Options.lua      options page (Settings → AddOns, fallback window; in combat it opens after the fight)
+UI/Minimap.lua      minimap button (LibDataBroker launcher + LibDBIcon, RunRecapDB.minimap)
+Media/Icon.tga      addon icon (minimap button, window portrait, addon list) - tools/make_icon.py from docs/curseforge/icon.svg
 UI/Demo.lua         preview with a made-up run (/recap demo)
 UI/Tour.lua         introduction tour, once at login (RunRecapDB.tourSeen), /recap tour
 UI/WhatsNew.lua     "What's new" once per version at login, version badge lists all releases, /recap news

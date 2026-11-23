@@ -9,7 +9,7 @@ Ein Addon für **WoW Forever**: Nach dem Endboss eines Dungeons öffnet sich ein
 
 > **Stand: Version 0.1.0 im Test**, noch nicht auf CurseForge.
 
-Autor: **Ibona93** · Lizenz: MIT (siehe [`LICENSE`](LICENSE); mitgelieferte Schriften: SIL OFL 1.1)
+Autor: **Ibona93** · Lizenz: MIT (siehe [`LICENSE`](LICENSE); mitgelieferte Schriften: SIL OFL 1.1; mitgelieferte Bibliotheken in `Libs/`: LibStub, CallbackHandler-1.0, LibDataBroker-1.1, LibDBIcon-1.0 unter ihren eigenen Lizenzen)
 Spielversion: WoW Forever **1.60.1, Interface 16001**
 
 Schwester-Addon: [BGF – Better Group Finder Forever](https://github.com/Ibona93/BetterGroupFinder)
@@ -45,6 +45,8 @@ Schwester-Addon: [BGF – Better Group Finder Forever](https://github.com/Ibona9
 | `/recap news` | „Neu in Run Recap“ zeigen (alle Release-Notes über das Versions-Etikett) |
 | `/recap debug` | Debug-Ausgabe an/aus, zeigt Version, Client-Build, Interface-Nummer und den laufenden Run |
 | `/recap help` | Befehle auflisten |
+
+Minimap-Button: Linksklick öffnet die Übersicht des letzten Runs, Rechtsklick die Optionen; er lässt sich am Minimap-Rand verschieben und in den Optionen ausblenden. Minimap-Sammeladdons und Broker-Leisten (Titan Panel, ChocolateBar) erkennen ihn.
 
 **Optionen:** automatisch öffnen (an/aus), auch grüne Items zeigen (Standard: ab Blau), Darstellung (Blizzard oder Run Recap), Erfolgssound (7 Sounds aus dem Spiel oder aus, mit Probehören), Vorschau.
 

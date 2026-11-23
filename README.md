@@ -9,7 +9,7 @@ An addon for **WoW Forever**: after the last boss of a dungeon, a summary of you
 
 > **Status: version 0.1.0 in testing**, not on CurseForge yet.
 
-Author: **Ibona93** · License: MIT (see [`LICENSE`](LICENSE); bundled fonts: SIL OFL 1.1)
+Author: **Ibona93** · License: MIT (see [`LICENSE`](LICENSE); bundled fonts: SIL OFL 1.1; bundled libraries in `Libs/`: LibStub, CallbackHandler-1.0, LibDataBroker-1.1, LibDBIcon-1.0 under their own licenses)
 Game version: WoW Forever **1.60.1, Interface 16001**
 
 Sister addon: [BGF – Better Group Finder Forever](https://github.com/Ibona93/BetterGroupFinder)
@@ -45,6 +45,8 @@ Sister addon: [BGF – Better Group Finder Forever](https://github.com/Ibona93/B
 | `/recap news` | Show "What's new" (all release notes via the version badge) |
 | `/recap debug` | Debug output on/off, shows version, client build, interface number and the current run |
 | `/recap help` | List the commands |
+
+Minimap button: left-click opens the recap of the last run, right-click the options; it can be dragged around the minimap and hidden in the options. Minimap button collectors and broker bars (Titan Panel, ChocolateBar) pick it up.
 
 **Options:** open automatically (on/off), show green items too (default: blue and better), look (Blizzard or Run Recap), success sound (7 game sounds or off, with preview), preview.
 

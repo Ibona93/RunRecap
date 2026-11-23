@@ -12,9 +12,9 @@ local Recap = {}
 ns.Recap = Recap
 
 local W = ns.Widgets
-local WIDTH, HEIGHT = 680, 590
+local WIDTH, HEIGHT = 680, 604
 local INSET_W, LEFT_W, RIGHT_W, TOP = 408, 372, 242, 76
-local PORTRAIT = "Interface\\Icons\\INV_Box_02"
+local PORTRAIT = ns.ICON
 local SKULL = "|TInterface\\TargetingFrame\\UI-TargetingFrame-Skull:12:12:0:0|t "
 -- one window per skin ("blizzard", "recap"); the locals below point to the active one
 local windows = {}
@@ -28,7 +28,10 @@ local HL_ICONS = {
 	lucky = "Interface\\Icons\\INV_Misc_Coin_01",
 	unlucky = "Interface\\Icons\\Spell_Shadow_GatherShadows",
 }
-local RIGHT_H = HEIGHT - 76 - 28   -- facts + gap + highlights
+-- bottom bar: buttons 10 px from the edge (as the boxes from the sides), 10 px below the boxes
+local MARGIN, BUTTON_H = 10, 22
+local BOTTOM = MARGIN + BUTTON_H + MARGIN
+local RIGHT_H = HEIGHT - TOP - BOTTOM -- facts + gap + highlights
 local HL_H = 30 + 4 * 37 + 6       -- highlights box: header + 4 compact rows
 
 local function L() return ns.L end
@@ -587,7 +590,7 @@ local function create(skin)
 
 	local left = W.SkinInset(frame, skin)
 	left:SetPoint("TOPLEFT", 10, -TOP)
-	left:SetPoint("BOTTOMLEFT", 10, 28)
+	left:SetPoint("BOTTOMLEFT", MARGIN, BOTTOM)
 	left:SetWidth(INSET_W)
 	frame.Left = left
 	frame.LeftHeader = W.Text(left, ns.Fonts.Heading(13), W.GOLD)
@@ -601,7 +604,7 @@ local function create(skin)
 	content:SetWidth(LEFT_W)
 
 	frame.Highlights = W.SkinInset(frame, skin)
-	frame.Highlights:SetPoint("BOTTOMRIGHT", -10, 28)
+	frame.Highlights:SetPoint("BOTTOMRIGHT", -MARGIN, BOTTOM)
 	frame.Highlights:SetPoint("BOTTOMLEFT", left, "BOTTOMRIGHT", 6, 0)
 	frame.Highlights:SetHeight(RIGHT_H - 300 - 6)
 	frame.Highlights.Header = W.Text(frame.Highlights, ns.Fonts.Heading(13), W.GOLD)
@@ -624,13 +627,13 @@ local function create(skin)
 	frame.Facts.Separator2 = W.Separator(frame.Facts, skin)
 
 	frame.Hint = W.Text(frame, ns.Fonts.Text(11), W.GREEN)
-	frame.Hint:SetPoint("BOTTOMLEFT", 16, 9)
+	frame.Hint:SetPoint("LEFT", frame, "BOTTOMLEFT", 16, MARGIN + BUTTON_H / 2)
 	frame.Hint:SetText(l.SHIFT_HINT)
 
-	frame.Close = W.SkinButton(frame, l.CLOSE, 96, 22, skin)
-	frame.Close:SetPoint("BOTTOMRIGHT", -8, 4)
+	frame.Close = W.SkinButton(frame, l.CLOSE, 96, BUTTON_H, skin)
+	frame.Close:SetPoint("BOTTOMRIGHT", -MARGIN, MARGIN)
 	frame.Close:SetScript("OnClick", function() Recap.Hide() end)
-	frame.Options = W.SkinButton(frame, l.OPTIONS, 96, 22, skin)
+	frame.Options = W.SkinButton(frame, l.OPTIONS, 96, BUTTON_H, skin)
 	frame.Options:SetPoint("RIGHT", frame.Close, "LEFT", native and -2 or -6, 0)
 	frame.Options:SetScript("OnClick", function() if ns.Options then ns.Options.Open() end end)
 

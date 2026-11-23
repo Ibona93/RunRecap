@@ -1,4 +1,5 @@
 std = "lua51"
+exclude_files = { "Libs/" }
 max_line_length = false
 self = false
 unused_args = false
@@ -13,7 +14,7 @@ read_globals = {
 	"PlaySound", "GetTime", "date", "strsplit", "time",
 	"UnitName", "UnitClass", "UnitExists", "UnitGUID", "UnitIsDeadOrGhost", "UnitIsDead", "UNKNOWNOBJECT", "UNKNOWN", "GetInventoryItemID", "UnitIsFeignDeath", "GetPlayerInfoByGUID",
 	"GetLootRollItemLink", "GetItemInfo", "GetItemIcon", "C_Item", "ITEM_QUALITY_COLORS", "RAID_CLASS_COLORS",
-	"CreateColor", "Settings", "SetPortraitToTexture", "C_TooltipInfo", "ChatEdit_InsertLink",
+	"CreateColor", "Settings", "LibStub", "SetPortraitToTexture", "C_TooltipInfo", "ChatEdit_InsertLink",
 }
 
 -- Test files mock the WoW API and set globals on purpose.
