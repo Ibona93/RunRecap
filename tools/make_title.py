@@ -24,9 +24,9 @@ small = ImageFont.truetype(F + "NotoSans-Regular.ttf", 30)
 GOLD, LIGHT, GREY = (255, 209, 0), (236, 230, 218), (190, 180, 160)
 t((110, 500), "Run Recap", title, GOLD)
 t((110, 600), "Forever", title, GOLD)
-t((112, 740), "Your dungeon run at a glance", claim, LIGHT)
+t((112, 740), "Every run deserves a proper finish", claim, LIGHT)
 y = 820
-for line in ("Every boss and every drop", "Rolls, deaths and highlights", "Your gold, vendor value and repairs"):
+for line in ("Victory banner and sound after the last boss", "Every boss, every drop, every roll", "Deaths, highlights and your gold"):
     d.ellipse((116, y + 14, 128, y + 26), fill=GOLD)
     t((146, y), line, small, GREY)
     y += 48
