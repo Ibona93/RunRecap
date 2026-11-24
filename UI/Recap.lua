@@ -64,25 +64,53 @@ local function sourceText(run, item)
 	return l.TT_SOURCE:format(l.TRASH)
 end
 
+-- Our own tooltip for boss and roll details: opaque, so the window text behind it doesn't show
+-- through (Felix, 24.11.2026). The item tooltip stays Blizzard's GameTooltip (item compare,
+-- other addons' lines). Our frame, not Blizzard's: changing its background is taint-free.
+local TIP_BG = { 0.06, 0.05, 0.04, 1 }
+local tipFrame
+local function Tip()
+	if not tipFrame then
+		tipFrame = CreateFrame("GameTooltip", "RunRecapTooltip", UIParent, "GameTooltipTemplate")
+		local function opaque(self)
+			if self.NineSlice and self.NineSlice.SetCenterColor then
+				self.NineSlice:SetCenterColor(TIP_BG[1], TIP_BG[2], TIP_BG[3], TIP_BG[4])
+			elseif self.SetBackdropColor then
+				pcall(self.SetBackdropColor, self, TIP_BG[1], TIP_BG[2], TIP_BG[3], TIP_BG[4])
+			end
+		end
+		tipFrame:HookScript("OnShow", opaque)
+		tipFrame:HookScript("OnSizeChanged", opaque)
+	end
+	return tipFrame
+end
+Recap.Tip = Tip
+
+local function hideTips()
+	GameTooltip:Hide()
+	if tipFrame then tipFrame:Hide() end
+end
+
 function Recap.BossTooltip(owner, run, entry)
 	local l = L()
 	local kill = entry.kill
-	GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
-	GameTooltip:SetText(kill.name or "?", W.GOLD[1], W.GOLD[2], W.GOLD[3])
-	GameTooltip:AddLine(l.TT_KILL:format(ns.Parse.Clock(kill.at), kill.fight and ns.Parse.Clock(kill.fight) or "?"), 1, 1, 1)
+	local tt = Tip()
+	tt:SetOwner(owner, "ANCHOR_RIGHT")
+	tt:SetText(kill.name or "?", W.GOLD[1], W.GOLD[2], W.GOLD[3])
+	tt:AddLine(l.TT_KILL:format(ns.Parse.Clock(kill.at), kill.fight and ns.Parse.Clock(kill.fight) or "?"), 1, 1, 1)
 	if shift() then
-		GameTooltip:AddLine(l.TT_WIPES:format(run.bossWipes[kill.key] or 0), 1, 1, 1)
+		tt:AddLine(l.TT_WIPES:format(run.bossWipes[kill.key] or 0), 1, 1, 1)
 		local deaths = run.bossDeaths[kill.key]
 		if deaths and #deaths > 0 then
 			local names = {}
 			for i, n in ipairs(deaths) do names[i] = playerName(run, n) end
-			GameTooltip:AddLine(l.TT_DEATHS:format(table.concat(names, ", ")), 1, 1, 1, true)
+			tt:AddLine(l.TT_DEATHS:format(table.concat(names, ", ")), 1, 1, 1, true)
 		else
-			GameTooltip:AddLine(l.TT_NO_DEATHS, W.GREY[1], W.GREY[2], W.GREY[3])
+			tt:AddLine(l.TT_NO_DEATHS, W.GREY[1], W.GREY[2], W.GREY[3])
 		end
-		GameTooltip:AddLine(l.TT_ITEMS:format(entry.itemCount or 0), 1, 1, 1)
+		tt:AddLine(l.TT_ITEMS:format(entry.itemCount or 0), 1, 1, 1)
 	end
-	GameTooltip:Show()
+	tt:Show()
 end
 
 function Recap.ItemTooltip(owner, run, item)
@@ -105,35 +133,36 @@ end
 
 function Recap.RollTooltip(owner, run, item)
 	local l = L()
-	GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
+	local tt = Tip()
+	tt:SetOwner(owner, "ANCHOR_RIGHT")
 	local r, g, b = W.QualityColor(item.quality)
-	GameTooltip:SetText(ns.Parse.ItemName(item.link) or "?", r, g, b)
+	tt:SetText(ns.Parse.ItemName(item.link) or "?", r, g, b)
 	local winner = item.looter and item.rolls[item.looter]
 	if item.rolling then
-		GameTooltip:AddLine(l.ROLLING, W.GREY[1], W.GREY[2], W.GREY[3])
+		tt:AddLine(l.ROLLING, W.GREY[1], W.GREY[2], W.GREY[3])
 	elseif item.allPassed and not item.looter then
-		GameTooltip:AddLine(l.ALL_PASSED, W.GREY[1], W.GREY[2], W.GREY[3])
+		tt:AddLine(l.ALL_PASSED, W.GREY[1], W.GREY[2], W.GREY[3])
 	elseif item.historyID and item.looter then
 		if winner and winner.choice then
-			GameTooltip:AddLine(l.TT_WON_WITH:format(playerName(run, item.looter), choiceText(winner.choice, winner.value)), 1, 1, 1)
+			tt:AddLine(l.TT_WON_WITH:format(playerName(run, item.looter), choiceText(winner.choice, winner.value)), 1, 1, 1)
 		else
-			GameTooltip:AddLine(l.TT_WON:format(playerName(run, item.looter)), 1, 1, 1)
+			tt:AddLine(l.TT_WON:format(playerName(run, item.looter)), 1, 1, 1)
 		end
 	else
-		GameTooltip:AddLine(l.DIRECT_LOOT, 1, 1, 1)
+		tt:AddLine(l.DIRECT_LOOT, 1, 1, 1)
 	end
 	if shift() and item.historyID then
 		local list = ns.Run.SortedRolls(item)
 		if #list == 0 then
-			GameTooltip:AddLine(l.TT_NO_ROLLS, W.GREY[1], W.GREY[2], W.GREY[3], true)
+			tt:AddLine(l.TT_NO_ROLLS, W.GREY[1], W.GREY[2], W.GREY[3], true)
 		else
-			GameTooltip:AddLine(" ")
+			tt:AddLine(" ")
 			for _, roll in ipairs(list) do
-				GameTooltip:AddDoubleLine(playerName(run, roll.name), choiceText(roll.choice, roll.value), 1, 1, 1, 0.85, 0.85, 0.85)
+				tt:AddDoubleLine(playerName(run, roll.name), choiceText(roll.choice, roll.value), 1, 1, 1, 0.85, 0.85, 0.85)
 			end
 		end
 	end
-	GameTooltip:Show()
+	tt:Show()
 end
 
 local function hover(widget, fn)
@@ -143,7 +172,7 @@ local function hover(widget, fn)
 	end)
 	widget:SetScript("OnLeave", function(self)
 		if hovered == self then hovered = nil end
-		GameTooltip:Hide()
+		hideTips()
 	end)
 	widget.Refresh = fn
 end
@@ -653,7 +682,7 @@ local function create(skin)
 	frame:HookScript("OnShow", function() if PlaySound then pcall(PlaySound, 839) end end)
 	frame:HookScript("OnHide", function()
 		hovered = nil
-		GameTooltip:Hide()
+		hideTips()
 		if PlaySound then pcall(PlaySound, 840) end
 	end)
 	W.CloseOnEscape(frame, function() Recap.Hide() end)
