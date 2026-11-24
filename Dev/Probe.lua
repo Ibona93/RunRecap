@@ -9,6 +9,7 @@ reads loot slot data while the loot window is open.
   /recap probe clear  delete the recording
   /recap sounds       play the success sound candidates one after another (3 s apart)
   /recap sound <id>   play one sound kit ID
+  /recap shot         show the last run as a copy in the client language (gallery screenshots)
 
 Messages are English on purpose (developer output, like BGF's "/bgf check").
 ]]
@@ -207,7 +208,69 @@ function Probe.PlayAll()
 end
 
 -- Slash sub-commands; returns true when handled.
+--[[
+Screenshot copy (CurseForge gallery, Felix 24.11.2026): the last run as a copy whose dungeon,
+boss and item names follow the client language - so a run recorded with a German client can
+be shown in English. Players, rolls, times, money stay real. Boss names: there is no API for
+them, so the English names of the dungeons Felix plays are listed here. Nothing is saved.
+]]
+local BOSS_NAMES_EN = {
+	-- Razorfen Kraul
+	Jargba = "Death Speaker Jargba", Aggem = "Aggem Thorncurse", Ramtusk = "Overlord Ramtusk",
+	Roogug = "Roogug", Agathelos = "Agathelos the Raging", Charlga = "Charlga Razorflank",
+}
+
+local function copy(t)
+	if type(t) ~= "table" then return t end
+	local c = {}
+	for k, v in pairs(t) do c[k] = copy(v) end
+	return c
+end
+
+function Probe.Shot()
+	local run = ns.Run.Latest()
+	if not run then
+		ns.Print("shot: no finished run yet")
+		return
+	end
+	local shot = copy(run)
+	shot.demo, shot.id = true, -1
+	local english = (GetLocale and GetLocale() or "enUS"):sub(1, 2) == "en"
+	local dungeon = ns.DUNGEONS and ns.DUNGEONS[run.mapID]
+	if english and dungeon and dungeon.name then shot.name = dungeon.name end
+	for _, kill in ipairs(shot.kills or {}) do
+		if english and BOSS_NAMES_EN[kill.key] then kill.name = BOSS_NAMES_EN[kill.key] end
+	end
+	local missing = 0
+	for _, item in ipairs(shot.items or {}) do
+		local itemString = item.link and item.link:match("|H(item:[^|]+)|h")
+		local link
+		if itemString and GetItemInfo then link = select(2, GetItemInfo(itemString)) end
+		if link then
+			item.link = link
+		else
+			missing = missing + 1
+			if C_Item and C_Item.RequestLoadItemDataByID and item.itemID then
+				C_Item.RequestLoadItemDataByID(item.itemID)
+			end
+		end
+	end
+	if missing > 0 then
+		ns.Print(("shot: %d item names not loaded yet - run /recap shot again in a moment"):format(missing))
+	end
+	ns.Banner.PlaySound()
+	ns.Banner.Show(shot, function(r)
+		if InCombatLockdown and InCombatLockdown() then return end
+		ns.Recap.Show(r)
+	end)
+	return shot
+end
+
 function Probe.Slash(msg)
+	if msg == "shot" then
+		Probe.Shot()
+		return true
+	end
 	if msg == "probe" then
 		if ns.db.probeActive then Probe.Stop() else Probe.Start() end
 		return true

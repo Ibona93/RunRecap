@@ -539,6 +539,40 @@ do
 	_G.issecretvalue, _G.UnitIsDead, _G.UnitExists = nil, nil, nil
 end
 
+print("Screenshot copy (/recap shot)")
+do
+	local db = ns.db
+	local saved = { id = 7, mapID = 47, name = "Kral von Razorfen", date = ns.Now(), startedAt = ns.Now() - 2671,
+		pausedTotal = 0, state = "paused", completed = true, completedAt = 2671,
+		kills = { { key = "Charlga", name = "Charlga Klingenflanke", at = 2671, fight = 37, final = true, wing = "main" } },
+		killed = { Charlga = 1 }, wings = { main = true }, completedWings = { main = 2671 }, wipes = 0,
+		bossWipes = {}, bossDeaths = {}, deaths = {}, deadNow = {}, players = { ["Jens Zigris"] = "HUNTER" },
+		items = { { link = "|cnIQ3:|Hitem:6693::::::::32:1486::1::1:|h[Agammagans Umklammerung]|h|r", itemID = 6693,
+			quality = 3, count = 1, looter = "Jens Zigris", source = 1, sure = true, rolls = {} } },
+		money = 4781, vendor = 14158, repair = 427, alias = {}, loot = {} }
+	local oldCurrent = db.currentRun
+	db.currentRun = saved
+	_G.GetLocale = function() return "enUS" end
+	local oldInfo = _G.GetItemInfo
+	_G.GetItemInfo = function(s)
+		if s == "item:6693::::::::32:1486::1::1:" then
+			return "Agamaggan's Clutch", "|cnIQ3:|Hitem:6693::::::::32:1486::1::1:|h[Agamaggan's Clutch]|h|r"
+		end
+	end
+	local ok, err = pcall(SlashCmdList.RUNRECAP, "shot")
+	pcall(ns.Banner.Finish)
+	local frame = ns.Recap.Frame and ns.Recap.Frame()
+	local shown = frame and frame.run
+	check("shot: copy in English (dungeon, boss, item), players kept", ok and shown and shown ~= saved
+		and shown.name == "Razorfen Kraul" and shown.kills[1].name == "Charlga Razorflank"
+		and shown.items[1].link:find("Agamaggan's Clutch", 1, true) and shown.items[1].looter == "Jens Zigris", err)
+	check("shot: the saved run is unchanged", saved.name == "Kral von Razorfen" and saved.kills[1].name == "Charlga Klingenflanke"
+		and saved.items[1].link:find("Agammagans", 1, true) ~= nil)
+	if ns.Recap.IsShown() then ns.Recap.Hide() end
+	_G.GetLocale, _G.GetItemInfo = function() return "deDE" end, oldInfo
+	db.currentRun = oldCurrent
+end
+
 print("Minimap button")
 do
 	local ldb = LibStub:NewLibrary("LibDataBroker-1.1", 1)
