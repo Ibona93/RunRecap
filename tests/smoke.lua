@@ -94,7 +94,8 @@ _G.GameTooltip = setmetatable({}, { __index = function(_, k)
 	if k == "Hide" then return function() tip.shown = false end end
 	return function() end
 end })
-_G.RunRecapTooltipMock = setmetatable({ own = true }, { __index = getmetatable(_G.GameTooltip).__index })
+_G.RunRecapTooltipMock = setmetatable({ own = true, CreateTexture = function() return newFrame("Texture") end },
+	{ __index = getmetatable(_G.GameTooltip).__index })
 local function tipHas(text)
 	for _, l in ipairs(tip.lines) do if l:find(text, 1, true) then return true end end
 	return false
@@ -358,7 +359,8 @@ do
 	local s = ns.Run.Summary(run, false)
 	ok, err = pcall(ns.Recap.BossTooltip, f, run, s.bosses[1])
 	check("boss tooltip: name and kill time", ok and tipHas("Flintauge") and tipHas("0:40"), err)
-	check("boss and roll tooltips use our own (opaque) tooltip, not GameTooltip", ns.Recap.Tip() == _G.RunRecapTooltipMock)
+	check("boss and roll tooltips use our own (opaque) tooltip, not GameTooltip", ns.Recap.Tip() == _G.RunRecapTooltipMock
+		and rawget(_G.RunRecapTooltipMock, "Solid") ~= nil)
 	shiftDown = true
 	pcall(ns.Recap.BossTooltip, f, run, s.bosses[1])
 	check("boss tooltip with Shift: wipes, deaths, items", tipHas("Wipes an diesem Boss: 0") and tipHas(ns.L.TT_NO_DEATHS) and tipHas("Items: 1"))

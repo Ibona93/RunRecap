@@ -72,6 +72,13 @@ local tipFrame
 local function Tip()
 	if not tipFrame then
 		tipFrame = CreateFrame("GameTooltip", "RunRecapTooltip", UIParent, "GameTooltipTemplate")
+		-- The tooltip background texture itself is see-through, colouring it is not enough
+		-- (Felix's screenshot, 24.11.2026): a solid layer of our own below the border.
+		local solid = tipFrame:CreateTexture(nil, "BACKGROUND", nil, -8)
+		solid:SetPoint("TOPLEFT", 3, -3)
+		solid:SetPoint("BOTTOMRIGHT", -3, 3)
+		solid:SetColorTexture(TIP_BG[1], TIP_BG[2], TIP_BG[3], TIP_BG[4])
+		tipFrame.Solid = solid
 		local function opaque(self)
 			if self.NineSlice and self.NineSlice.SetCenterColor then
 				self.NineSlice:SetCenterColor(TIP_BG[1], TIP_BG[2], TIP_BG[3], TIP_BG[4])
