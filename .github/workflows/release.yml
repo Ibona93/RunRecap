@@ -112,6 +112,8 @@ jobs:
           while read -r version sha rtype rest; do
             case "$version" in ""|\#*) continue ;; esac
             rtype="${rtype:-release}"
+            # GitHub wants the full commit SHA as release target (a short one fails with 422)
+            sha=$(git rev-parse --verify --quiet "$sha^{commit}" || echo "$sha")
             notes="releases/notes/$version.md"
             zip="releases/RunRecap-$version.zip"
             [ -f "$zip" ] || zip="releases/RunRecap-${version%%-*}.zip"
