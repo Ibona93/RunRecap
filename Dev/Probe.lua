@@ -245,7 +245,12 @@ function Probe.Shot()
 	for _, item in ipairs(shot.items or {}) do
 		local itemString = item.link and item.link:match("|H(item:[^|]+)|h")
 		local link
-		if itemString and GetItemInfo then link = select(2, GetItemInfo(itemString)) end
+		if GetItemInfo then
+			-- the full item string keeps random suffixes ("... of the Falcon"); Forever may not
+			-- resolve its link format, then the plain item ID
+			if itemString then link = select(2, GetItemInfo(itemString)) end
+			if not link and item.itemID then link = select(2, GetItemInfo(item.itemID)) end
+		end
 		if link then
 			item.link = link
 		else
@@ -256,7 +261,10 @@ function Probe.Shot()
 		end
 	end
 	if missing > 0 then
-		ns.Print(("shot: %d item names not loaded yet - run /recap shot again in a moment"):format(missing))
+		ns.Print(("shot: %d of %d item names not loaded yet - run /recap shot again in a moment"):format(missing,
+			#(shot.items or {})))
+	else
+		ns.Print(("shot: all %d item names in the client language"):format(#(shot.items or {})))
 	end
 	ns.Banner.PlaySound()
 	ns.Banner.Show(shot, function(r)
