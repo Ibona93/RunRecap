@@ -57,9 +57,9 @@ slide("2-recap", "693f4d72-image.png", None, "Every boss. Every drop.",
       "Kill time, fight length and who got what – plus your gold, deaths and highlights")
 slide("3-item", "3011cc19-image.png", (60, 40, 1295, 1520), "Where did it drop?",
       "Hover an item: who looted it and which boss it came from")
-slide("4-rolls", "f491e743-image.png", (110, 250, 1670, 955), "Every roll",
+slide("4-rolls", "a3aefdff-image.png", (95, 235, 1640, 940), "Every roll",
       "Hold Shift on a looter to see need, greed and every number")
-slide("5-boss", "899450df-image.png", (140, 260, 1700, 965), "Boss details",
+slide("5-boss", "36fc2053-image.png", (55, 215, 1590, 925), "Boss details",
       "Hold Shift on a boss: kill time, fight length, wipes and deaths")
 slide("6-skin", "f34ff665-image.png", None, "Two looks",
       "Native Blizzard style or Run Recap's dark & gold")
