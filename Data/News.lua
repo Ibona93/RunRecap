@@ -7,7 +7,7 @@ New versions: add the page here, put the version first in NEWS_ORDER.
 ]]
 
 local ICON = {
-	chest = "Interface\\Icons\\INV_Box_02",
+	chest = ns.ICON or "Interface\\Icons\\INV_Box_02",
 	scroll = "Interface\\Icons\\INV_Scroll_03",
 	loot = "Interface\\Icons\\INV_Misc_Bag_10",
 	dice = "Interface\\Icons\\INV_Misc_Coin_01",
@@ -40,7 +40,7 @@ ns.NEWS = {
 			{ icon = ICON.chest, title = "Your dungeon run at a glance",
 				text = "After the last boss Run Recap opens a summary: every boss with the minute in the run and the fight time, who got which loot, and facts about the run." },
 			{ icon = ICON.loot, title = "Who got what – and from whom",
-				text = "Loot is listed under the boss it came from. Items from normal enemies are under \"Trash\", uncertain sources are marked \"probably\".",
+				text = "Loot is listed under the boss it came from. Items from normal enemies are under \"Trash\", uncertain sources are marked \"probably\". Rare elites show up when you kill them.",
 				tip = "Hold Shift over an item row to see every roll" },
 			{ icon = ICON.watch, title = "Facts and highlights",
 				text = "Duration, wipes, deaths, your gold, the vendor value of your loot and your repair costs – plus the four most remarkable moments of the run." },
@@ -52,7 +52,7 @@ ns.NEWS = {
 			{ icon = ICON.chest, title = "Dein Dungeon-Run auf einen Blick",
 				text = "Nach dem Endboss öffnet Run Recap eine Zusammenfassung: jeder Boss mit Minute im Run und Kampfdauer, wer welche Beute bekommen hat und Fakten zum Run." },
 			{ icon = ICON.loot, title = "Wer hat was bekommen – und woher",
-				text = "Beute steht unter dem Boss, von dem sie kam. Items von normalen Gegnern stehen unter „Trash“, unsichere Quellen sind mit „vermutlich“ markiert.",
+				text = "Beute steht unter dem Boss, von dem sie kam. Items von normalen Gegnern stehen unter „Trash“, unsichere Quellen sind mit „vermutlich“ markiert. Seltene Elites erscheinen, wenn ihr sie legt.",
 				tip = "Umschalt über einer Item-Zeile zeigt alle Würfe" },
 			{ icon = ICON.watch, title = "Fakten und Highlights",
 				text = "Dauer, Wipes, Tode, dein Gold, der Händlerwert deiner Beute und deine Reparaturkosten – dazu die vier spannendsten Momente des Runs." },

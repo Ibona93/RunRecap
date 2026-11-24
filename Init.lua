@@ -3,7 +3,7 @@
 local ADDON_NAME, ns = ...
 
 ns.ADDON_NAME = ADDON_NAME
-ns.VERSION = "0.1.0"
+ns.VERSION = "1.0.0"
 ns.ICON = "Interface\\AddOns\\RunRecap\\Media\\Icon" -- addon icon (minimap button, window portrait)
 
 -- Locale registry, filled by Locales/*.lua.

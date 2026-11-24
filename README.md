@@ -7,7 +7,7 @@ An addon for **WoW Forever**: after the last boss of a dungeon, a summary of you
 - who got which item from which boss
 - fun facts about the run: duration, deaths, wipes, gold
 
-> **Status: version 0.1.0 in testing**, not on CurseForge yet.
+> **Current version: 1.0.0** – on CurseForge.
 
 Author: **Ibona93** · License: MIT (see [`LICENSE`](LICENSE); bundled fonts: SIL OFL 1.1; bundled libraries in `Libs/`: LibStub, CallbackHandler-1.0, LibDataBroker-1.1, LibDBIcon-1.0 under their own licenses)
 Game version: WoW Forever **1.60.1, Interface 16001**
@@ -62,10 +62,11 @@ Bug reports and ideas: [GitHub Issues](https://github.com/Ibona93/RunRecap/issue
 
 ## 6. Changelog
 
-### 0.1.0 (in testing)
+### 1.0.0 (24.11.2026)
 - First version: recap after the last boss with bosses (minute in the run, fight duration, end boss), loot per boss with the looter in class colour, a "Trash" section and run facts (duration, bosses, wipes, your gold, vendor value of your loot, repair costs and balance, deaths, highlights).
 - Success moment: sound and "Dungeon completed!" banner, then the recap.
 - Rolls: who won, and with Shift every roll.
+- Rare elites appear when killed (tagged "rare"); gold from quests handed in inside the dungeon counts.
 - Introduction on the first start, "What's new" after every update (German/English).
 - All 28 dungeons, including the 9 new Forever dungeons (wings for Scarlet Monastery, Dire Maul, Stratholme and Blackrock Spire).
 - Two looks: Blizzard (default) or Run Recap (dark & gold); options: open automatically, green items, look, success sound, preview. Texts in 10 languages.
