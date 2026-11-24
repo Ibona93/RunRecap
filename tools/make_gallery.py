@@ -55,7 +55,7 @@ img.save("/home/claude/gallery/1-banner.png", optimize=True)
 
 slide("2-recap", "693f4d72-image.png", None, "Every boss. Every drop.",
       "Kill time, fight length and who got what – plus your gold, deaths and highlights")
-slide("3-item", "3011cc19-image.png", (60, 40, 1295, 1520), "Where did it drop?",
+slide("3-item", "10f4cccd-image.png", (40, 200, 1105, 1100), "Where did it drop?",
       "Hover an item: who looted it and which boss it came from")
 slide("4-rolls", "a3aefdff-image.png", (95, 235, 1640, 940), "Every roll",
       "Hold Shift on a looter to see need, greed and every number")
