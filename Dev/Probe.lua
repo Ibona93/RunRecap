@@ -244,13 +244,18 @@ function Probe.Shot()
 	local missing = 0
 	for _, item in ipairs(shot.items or {}) do
 		local itemString = item.link and item.link:match("|H(item:[^|]+)|h")
-		local link
-		if GetItemInfo then
-			-- the full item string keeps random suffixes ("... of the Falcon"); Forever may not
-			-- resolve its link format, then the plain item ID
-			if itemString then link = select(2, GetItemInfo(itemString)) end
-			if not link and item.itemID then link = select(2, GetItemInfo(item.itemID)) end
+		-- Forever: the global GetItemInfo may be missing, C_Item has it. Only the name is taken and
+		-- put into the saved link, so its item string (random suffix, quality) stays as it is.
+		local name
+		for _, fn in ipairs({ GetItemInfo or false, C_Item and C_Item.GetItemInfo or false }) do
+			if fn and not name and itemString then name = ns.TryCall(fn, itemString) end
+			if fn and not name and item.itemID then name = ns.TryCall(fn, item.itemID) end
 		end
+		if not name and C_Item and C_Item.GetItemNameByID and item.itemID then
+			name = ns.TryCall(C_Item.GetItemNameByID, item.itemID)
+		end
+		local link = type(name) == "string" and name ~= "" and item.link
+			and item.link:gsub("|h%[.-%]|h", function() return "|h[" .. name .. "]|h" end) or nil
 		if link then
 			item.link = link
 		else
