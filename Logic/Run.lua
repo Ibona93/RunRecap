@@ -373,7 +373,7 @@ local function addKill(run, boss, wing, name, now, extra)
 	local at = Run.Elapsed(run, now)
 	local kill = {
 		key = boss.key, name = name, wing = wing and wing.key,
-		at = at, final = boss.final, opt = boss.opt, time = now,
+		at = at, final = boss.final, opt = boss.opt, rare = boss.rare, time = now,
 	}
 	for k, v in pairs(extra or {}) do kill[k] = v end
 	run.kills[#run.kills + 1] = kill

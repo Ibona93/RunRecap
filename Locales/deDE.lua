@@ -20,6 +20,7 @@ ns.RegisterLocale("deDE", {
 	OPTIONS = "Optionen",
 	FIGHT = "Kampf %s",
 	FINAL_BOSS = "Endboss",
+	RARE = "selten",
 	TRASH = "Trash",
 	PROBABLY_HEADER = "? vermutlich von diesem Boss",
 	NO_LOOT_BLUE = "keine blaue oder bessere Beute",

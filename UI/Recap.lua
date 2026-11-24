@@ -104,7 +104,7 @@ function Recap.BossTooltip(owner, run, entry)
 	local tt = Tip()
 	tt:SetOwner(owner, "ANCHOR_RIGHT")
 	tt:SetText(kill.name or "?", W.GOLD[1], W.GOLD[2], W.GOLD[3])
-	tt:AddLine(l.TT_KILL:format(ns.Parse.Clock(kill.at), kill.fight and ns.Parse.Clock(kill.fight) or "?"), 1, 1, 1)
+	tt:AddLine(l.TT_KILL:format(ns.Parse.Clock(kill.at), kill.fight and ns.Parse.Clock(kill.fight) or "–"), 1, 1, 1)
 	if shift() then
 		tt:AddLine(l.TT_WIPES:format(run.bossWipes[kill.key] or 0), 1, 1, 1)
 		local deaths = run.bossDeaths[kill.key]
@@ -314,11 +314,17 @@ local function fillBoss(r, run, entry, label)
 		r.Name:SetTextColor(1, 1, 1)
 		r.Fight:SetText(kill.fight and l.FIGHT:format(ns.Parse.Clock(kill.fight)) or "")
 		local final = ns.Run.IsFinal(kill)
-		r.Tag:SetShown(final)
+		-- rare elite (no encounter): small silver tag instead of the final-boss tag
+		local rare = not final and kill.rare
+		r.Tag:SetShown(final or rare)
 		if final then
 			r.Tag.Text:SetText(SKULL .. l.FINAL_BOSS)
-			r.Tag:SetWidth(math.ceil(r.Tag.Text:GetStringWidth() or 50) + 4)
+			r.Tag.Text:SetTextColor(W.GOLD[1], W.GOLD[2], W.GOLD[3])
+		elseif rare then
+			r.Tag.Text:SetText(l.RARE)
+			r.Tag.Text:SetTextColor(0.78, 0.8, 0.86)
 		end
+		if final or rare then r.Tag:SetWidth(math.ceil(r.Tag.Text:GetStringWidth() or 50) + 4) end
 		r:EnableMouse(true)
 	else
 		r.Minute:SetText("")
@@ -748,6 +754,18 @@ end
 
 function Recap.IsShown() return frame and frame:IsShown() or false end
 function Recap.Frame() return frame end
+
+-- Shown boss rows as "name|tag" (tests).
+function Recap.BossLines()
+	local out = {}
+	for i = 1, (used and used.boss or 0) do
+		local r = pools.boss[i]
+		if r.entry then
+			out[#out + 1] = tostring(r.Name:GetText()) .. "|" .. (r.Tag:IsShown() and tostring(r.Tag.Text:GetText()) or "")
+		end
+	end
+	return out
+end
 
 -- Shown fact rows as "label|value" (tests).
 function Recap.FactLines()

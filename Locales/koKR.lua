@@ -20,6 +20,7 @@ ns.RegisterLocale("koKR", {
 	OPTIONS = "설정",
 	FIGHT = "전투 %s",
 	FINAL_BOSS = "최종 우두머리",
+	RARE = "희귀",
 	TRASH = "일반 몹",
 	PROBABLY_HEADER = "? 아마도 이 우두머리",
 	NO_LOOT_BLUE = "희귀 이상 전리품 없음",

@@ -20,6 +20,7 @@ ns.RegisterLocale("esES", {
 	OPTIONS = "Opciones",
 	FIGHT = "combate %s",
 	FINAL_BOSS = "jefe final",
+	RARE = "raro",
 	TRASH = "Trash",
 	PROBABLY_HEADER = "? probablemente de este jefe",
 	NO_LOOT_BLUE = "ningún botín azul o mejor",

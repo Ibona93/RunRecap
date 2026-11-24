@@ -20,6 +20,7 @@ ns.RegisterLocale("ruRU", {
 	OPTIONS = "Настройки",
 	FIGHT = "бой %s",
 	FINAL_BOSS = "последний босс",
+	RARE = "редкий",
 	TRASH = "Трэш",
 	PROBABLY_HEADER = "? вероятно, с этого босса",
 	NO_LOOT_BLUE = "нет синей и лучше добычи",

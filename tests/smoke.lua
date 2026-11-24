@@ -581,6 +581,26 @@ do
 	db.currentRun = oldCurrent
 end
 
+print("Rare elite in the recap")
+do
+	local now = ns.Now()
+	local run = { id = 9, mapID = 189, name = "Scharlachrotes Kloster", date = now, startedAt = now - 900, pausedTotal = 0,
+		state = "paused", completed = true, completedAt = 812,
+		kills = { { key = "Vishas", name = "Befrager Vishas", at = 278, fight = 28, wing = "graveyard" },
+			{ key = "Ironspine", name = "Eisenrücken", at = 640, wing = "graveyard", rare = true, opt = true, fromNpc = true },
+			{ key = "Thalnos", name = "Blutmagier Thalnos", at = 812, fight = 43, wing = "graveyard", final = true } },
+		killed = { Vishas = 1, Ironspine = 2, Thalnos = 3 }, wings = { graveyard = true }, completedWings = { graveyard = 812 },
+		wipes = 0, bossWipes = {}, bossDeaths = {}, deaths = {}, deadNow = {}, players = { Ibona = "PALADIN" },
+		items = {}, money = 0, vendor = 0, repair = 0, alias = {}, loot = {} }
+	local ok, err = pcall(ns.Recap.Show, run)
+	local lines = ok and ns.Recap.BossLines() or {}
+	check("rare row shows the rare tag, final boss the final tag", ok and lines[2] == "Eisenrücken|" .. ns.L.RARE
+		and lines[3]:find(ns.L.FINAL_BOSS, 1, true) ~= nil and lines[1] == "Befrager Vishas|", err or table.concat(lines, " / "))
+	local s = ns.Run.Summary(run, false)
+	check("rare not counted in bosses x/y", s.done == 2 and s.total == 2, tostring(s.done) .. "/" .. tostring(s.total))
+	ns.Recap.Hide()
+end
+
 print("Minimap button")
 do
 	local ldb = LibStub:NewLibrary("LibDataBroker-1.1", 1)

@@ -3,13 +3,17 @@
 # req (counts toward "x/y" and the all-bosses rule), final (killing it completes the wing).
 D = []
 def dungeon(map_id, name, wings, verified=True): D.append((map_id, name, wings, verified))
-def b(key, ids, npc, req=True, final=False): return dict(key=key, ids=ids, npc=npc, req=req, final=final)
+def b(key, ids, npc, req=True, final=False, rare=False):
+    return dict(key=key, ids=ids, npc=npc, req=req, final=final, rare=rare)
+# Rare elites (Felix, 24.11.2026): no encounter, found by NPC ID (dead in sight or own loot window);
+# shown only when killed, never count toward x/y. NPC IDs from Wowhead (Classic).
+def r(key, npc, ids=()): return b(key, list(ids), npc, req=False, rare=True)
 
 dungeon(389, "Ragefire Chasm", [("main", [
     b("Oggleflint", [2732, 430], [11517]), b("Taragaman", [2733, 431], [11520]),
     b("Jergosh", [2734, 432], [11518]), b("Bazzalan", [2735, 433], [11519])])])
 dungeon(36, "The Deadmines", [("main", [
-    b("RhahkZor", [2741, 2967, 161], [644]), b("MinerJohnson", [3676], [3586], req=False),
+    b("RhahkZor", [2741, 2967, 161], [644]), r("MinerJohnson", [3586], [3676]),
     b("Sneed", [2742, 2968, 162], [642, 643]), b("Gilnid", [2743, 2969, 163], [1763]),
     b("MrSmite", [2745, 2970, 164], [646]), b("Greenskin", [2744, 2971, 166], [647]),
     b("VanCleef", [2747, 2972, 167], [639], final=True), b("Cookie", [2746, 2986, 165], [645], req=False)])])
@@ -17,35 +21,39 @@ dungeon(43, "Wailing Caverns", [("main", [
     b("Anacondra", [585], [3671]), b("Pythas", [588], [3670]), b("Cobrahn", [586], [3669]),
     b("Kresh", [587], [3653], req=False), b("Skum", [589], [3674], req=False),
     b("Serpentis", [590], [3673]), b("Verdan", [591], [5775]),
-    b("Mutanus", [592], [3654], final=True)])])
+    b("Mutanus", [592], [3654], final=True),
+    r("Trigore", [3652]), r("Boahn", [3672]), r("DeviateFaerieDragon", [5912])])])
 dungeon(48, "Blackfathom Deeps", [("main", [
     b("GhamooRa", [2916, 2761, 219], [4887]), b("Serevess", [2915, 2762, 220], [4831]),
     b("Gelihast", [2914, 2763, 221], [6243]), b("LorgusJett", [222], [12902], req=False), b("Kelris", [2911, 2766, 225], [4832]),
     b("OldSerrakis", [2912, 2765, 224], [4830], req=False), b("Akumai", [2910, 2767, 226], [4829], final=True)])])
 dungeon(34, "The Stockade", [("main", [
     b("Targorr", [2756], [1696]), b("KamDeepfury", [2757], [1666]), b("Hamhock", [2758], [1717]),
-    b("BazilThredd", [2760], [1716]), b("DextrenWard", [2759], [1663])])])
+    b("BazilThredd", [2760], [1716]), b("DextrenWard", [2759], [1663]), r("Bruegal", [1720])])])
 dungeon(33, "Shadowfang Keep", [("main", [
     b("Rethilgore", [2748, 464], [3914]), b("Razorclaw", [2749, 465], [3886]), b("Silverlaine", [2750, 466], [3887]),
     b("Springvale", [2751, 467], [4278]), b("Odo", [2752, 468], [4279]), b("Fenrus", [2753, 469], [4274]),
-    b("Nandos", [2754, 470], [3927]), b("Arugal", [2755, 471], [4275], final=True)])])
+    b("Nandos", [2754, 470], [3927]), b("Arugal", [2755, 471], [4275], final=True),
+    r("DeathswornCaptain", [3872])])])
 dungeon(47, "Razorfen Kraul", [("main", [
     b("Roogug", [2773], [6168]), b("Aggem", [2774, 439], [4424]), b("Jargba", [2775, 440], [4428]),
     b("Ramtusk", [2776, 441], [4420]), b("Agathelos", [2777, 883], [4422]),
-    b("Charlga", [2778, 443], [4421], final=True)])])
+    b("Charlga", [2778, 443], [4421], final=True),
+    r("Halmgar", [4842]), r("BlindHunter", [4425])])])
 dungeon(90, "Gnomeregan", [("main", [
     b("Grubbis", [2768, 379], [7361]), b("ViscousFallout", [2769, 378], [7079]),
     b("Electrocutioner", [2770, 380], [6235]), b("CrowdPummeler", [2771, 381], [6229]),
-    b("Thermaplugg", [2772, 382], [7800], final=True)])])
+    b("Thermaplugg", [2772, 382], [7800], final=True), r("DarkIronAmbassador", [6228])])])
 dungeon(189, "Scarlet Monastery", [
-    ("graveyard", [b("Vishas", [444], [3983]), b("Thalnos", [2779, 2818, 445], [4543], final=True)]),
+    ("graveyard", [b("Vishas", [444], [3983]), b("Thalnos", [2779, 2818, 445], [4543], final=True),
+                   r("FallenChampion", [6488]), r("Ironspine", [6489]), r("Azshir", [6490])]),
     ("library", [b("Loksey", [446], [3974]), b("Doan", [447], [6487], final=True)]),
     ("armory", [b("Herod", [448], [3975], final=True)]),
     ("cathedral", [b("Fairbanks", [449], [4542], req=False),
                    b("MograineWhitemane", [450], [3977, 3976], final=True)])])
 dungeon(129, "Razorfen Downs", [("main", [
     b("Tutenkash", [2780, 434], [7355]), b("Plaguemaw", [2781], [7356], req=False),
-    b("Mordresh", [2782, 435], [7357]), b("Ragglesnout", [2783], [7354], req=False),
+    b("Mordresh", [2782, 435], [7357]), r("Ragglesnout", [7354], [2783]),
     b("Glutton", [2784, 436], [8567]), b("Amnennar", [2785, 437], [7358], final=True)])])
 dungeon(70, "Uldaman", [("main", [
     b("Revelosh", [547], [6910]), b("LostDwarves", [548], [6906, 6907, 6908]),
@@ -55,11 +63,12 @@ dungeon(70, "Uldaman", [("main", [
 dungeon(209, "Zul'Farrak", [("main", [
     b("Velrath", [593], [7795], req=False), b("Gahzrilla", [594], [7273], req=False),
     b("Antusul", [595], [8127]), b("Theka", [596], [7272]), b("Zumrah", [597], [7271]),
-    b("NekrumSezzziz", [598, 599], [7796, 7275]), b("Ukorz", [600], [7267], final=True)])])
+    b("NekrumSezzziz", [598, 599], [7796, 7275]), b("Ukorz", [600], [7267], final=True),
+    r("Sandarr", [10080]), r("Dustwraith", [10081]), r("Zerillis", [10082])])])
 dungeon(349, "Maraudon", [("main", [
     b("Noxxion", [422], [13282]), b("Razorlash", [423], [12258]), b("Vyletongue", [424], [12236]),
     b("Celebras", [425], [12225]), b("Landslide", [426], [12203]), b("Gizlock", [427], [13601]),
-    b("Rotgrip", [428], [13596]), b("Theradras", [429], [12201], final=True)])])
+    b("Rotgrip", [428], [13596]), b("Theradras", [429], [12201], final=True), r("Meshlok", [12237])])])
 dungeon(109, "The Temple of Atal'Hakkar", [("main", [
     b("Atalalarion", [3582], [8580], req=False), b("Dreamscythe", [486, 3588], [5721]),
     b("Weaver", [487, 3587], [5720]), b("Jammalan", [488, 3589], [5710]),
@@ -72,15 +81,17 @@ dungeon(230, "Blackrock Depths", [("main", [
     b("BaelGar", [235], [9016]), b("Angerforge", [236], [9033]), b("Argelmach", [237], [8983]),
     b("Hurley", [238], [9537], req=False), b("Phalanx", [239], [9502]), b("Plugger", [241], [9499], req=False), b("Ribbly", [240], [9543], req=False),
     b("Flamelash", [242], [9156]), b("TheSeven", [243], [9035, 9039, 9040, 9037, 9034, 9038, 9036]),
-    b("Magmus", [244], [9938]), b("Thaurissan", [245, 2790], [9019], final=True)])])
+    b("Magmus", [244], [9938]), b("Thaurissan", [245, 2790], [9019], final=True), r("Panzor", [8923])])])
 dungeon(229, "Blackrock Spire", [
     ("lower", [b("Omokk", [267], [9196]), b("Voshgajin", [268], [9236]), b("Voone", [269], [9237]),
                b("Smolderweb", [270], [10596]), b("Urok", [271], [10584], req=False),
                b("Zigris", [272], [9736]), b("Gizrul", [273], [10268], req=False),
-               b("Halycon", [274], [10220]), b("Wyrmthalak", [275], [9568], final=True)]),
+               b("Halycon", [274], [10220]), b("Wyrmthalak", [275], [9568], final=True),
+               r("SpirestoneLordMagus", [9217]), r("SpirestoneBattleLord", [9218]), r("SpirestoneButcher", [9219]),
+               r("Bannok", [9596]), r("Ghok", [9718]), r("CrystalFang", [10376]), r("BurningFelguard", [10263])]),
     ("upper", [b("Emberseer", [3062, 276], [9816]), b("Solakar", [277], [10264], req=False), b("Rend", [3063, 278], [10339, 10429]),
                b("TheBeast", [3068, 279], [10430]), b("Valthalak", [3070], [16042], req=False),
-               b("Drakkisath", [3069, 280], [10363], final=True)])])
+               b("Drakkisath", [3069, 280], [10363], final=True), r("Jed", [10509])])])
 dungeon(429, "Dire Maul", [
     ("east", [b("Zevrim", [343], [11490]), b("Hydrospawn", [344], [13280]),
               b("Lethtendris", [345], [14327]), b("Alzzin", [346], [11492], final=True)]),
@@ -100,7 +111,7 @@ dungeon(329, "Stratholme", [
               b("Unforgiven", [472], [10516], req=False), b("Willey", [475], [10997]),
               b("Malor", [476], [11032], req=False), b("Galford", [477], [10811]),
               b("Postmaster", [1885, 2798], [11143], req=False),
-              b("Balnazzar", [478], [10813, 10812], final=True)]),
+              b("Balnazzar", [478], [10813, 10812], final=True), r("Skul", [10393]), r("Stonespine", [10809])]),
     ("undead", [b("Barthilas", [482], [10435], req=False), b("Anastari", [479], [10436]),
                 b("Nerubenkan", [480], [10437]), b("Maleki", [481], [10438]),
                 b("Ramstein", [483], [10439]), b("Rivendare", [484], [10440], final=True)])])
@@ -134,7 +145,8 @@ out = ["local _, ns = ...", "",
 "Boss fields:  key   stable internal name (never shown; names come from ENCOUNTER_END)",
 "              ids   every known encounter ID (Forever, Classic Era and older variants)",
 "              npc   NPC IDs (for GetLootSourceInfo)",
-"              opt   optional/rare: does not count toward x/y or the all-bosses rule",
+"              opt   optional: does not count toward x/y or the all-bosses rule",
+"              rare  rare elite without encounter (always opt): found by NPC ID, shown only when killed",
 "              final killing it completes the wing",
 "A wing is complete when a final boss dies, or - if the wing has no final boss - when every",
 "non-optional boss is dead. verified = false would mark a dungeon whose final boss is not confirmed.",
@@ -148,6 +160,7 @@ for map_id, name, wings, verified in D:
             parts = [f'key = "{x["key"]}"', f"ids = {lua_list(x['ids'])}"]
             if x["npc"]: parts.append(f"npc = {lua_list(x['npc'])}")
             if not x["req"]: parts.append("opt = true")
+            if x["rare"]: parts.append("rare = true")
             if x["final"]: parts.append("final = true")
             out.append("\t\t\t{ " + ", ".join(parts) + " },")
         out.append("\t\t} },")

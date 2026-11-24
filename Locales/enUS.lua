@@ -21,6 +21,7 @@ ns.RegisterLocale("enUS", {
 	OPTIONS = "Options",
 	FIGHT = "fight %s",
 	FINAL_BOSS = "final boss",
+	RARE = "rare",
 	TRASH = "Trash",
 	PROBABLY_HEADER = "? probably from this boss",
 	NO_LOOT_BLUE = "no blue or better loot",

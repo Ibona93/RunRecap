@@ -20,6 +20,7 @@ ns.RegisterLocale("zhCN", {
 	OPTIONS = "选项",
 	FIGHT = "战斗 %s",
 	FINAL_BOSS = "最终首领",
+	RARE = "稀有",
 	TRASH = "小怪",
 	PROBABLY_HEADER = "? 可能来自此首领",
 	NO_LOOT_BLUE = "没有蓝色或更好的战利品",

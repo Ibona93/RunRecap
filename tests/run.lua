@@ -551,6 +551,41 @@ do
 	check("kill minute past an hour: 66:12", ns.Parse.Minutes(3972) == "66:12" and ns.Parse.Minutes(59) == "0:59")
 	R.End("test")
 
+	-- Rare elites (Friedhof, 24.11.2026): no encounter, shown only when killed, never in x/y
+	clock = 90000
+	local gy = R.OnZone({ inInstance = true, instanceType = "party", mapID = 189, name = "Scharlachrotes Kloster" })
+	R.OnEncounterEnd(gy, 444, "Befrager Vishas", 1)
+	local _, before = R.BossProgress(gy)
+	clock = clock + 200
+	R.OnLootWindow(gy, { { link = PERLE, npc = 6489, npcName = "Eisenrücken" } })
+	local spine = gy.kills[gy.killed.Ironspine]
+	check("rare: its loot window adds it as a rare kill", spine and spine.rare and spine.opt and spine.name == "Eisenrücken")
+	local done, total = R.BossProgress(gy)
+	check("rare: not counted in bosses x/y", done == 1 and total == before and total == 2)
+	check("rare: does not complete the wing", not gy.completed)
+	R.OnRollStart(gy, 777, PERLE)
+	local rareItem
+	for _, it in ipairs(gy.items) do if it.historyID == 777 then rareItem = it end end
+	check("rare: its loot is listed under it, not under trash", rareItem and rareItem.source == gy.killed.Ironspine)
+	R.OnEncounterEnd(gy, 445, "Blutmagier Thalnos", 1)
+	check("rare: the wing still completes with its real bosses", gy.completed and gy.completedWings.graveyard)
+	R.End("test")
+
+	-- data: every NPC ID belongs to one boss only
+	local seen, dup = {}, nil
+	for _, dg in pairs(ns.DUNGEONS) do
+		for _, wing in ipairs(dg.wings) do
+			for _, boss in ipairs(wing.bosses) do
+				for _, id in ipairs(boss.npc or {}) do
+					if seen[id] then dup = id end
+					seen[id] = true
+				end
+				if boss.rare and (not boss.opt or boss.final) then dup = boss.key end
+			end
+		end
+	end
+	check("dungeon data: NPC IDs unique, rares always optional and never final", dup == nil, tostring(dup))
+
 	-- Dalaran (23.11.2026): first names from the unit functions, full names in chat lines
 	clock = 60000
 	R.End("test")

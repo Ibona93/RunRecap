@@ -8,7 +8,8 @@ cross-checked against the Ragefire Chasm probe run and the Forever client's Dung
 Boss fields:  key   stable internal name (never shown; names come from ENCOUNTER_END)
               ids   every known encounter ID (Forever, Classic Era and older variants)
               npc   NPC IDs (for GetLootSourceInfo)
-              opt   optional/rare: does not count toward x/y or the all-bosses rule
+              opt   optional: does not count toward x/y or the all-bosses rule
+              rare  rare elite without encounter (always opt): found by NPC ID, shown only when killed
               final killing it completes the wing
 A wing is complete when a final boss dies, or - if the wing has no final boss - when every
 non-optional boss is dead. verified = false would mark a dungeon whose final boss is not confirmed.
@@ -26,7 +27,7 @@ ns.DUNGEONS = {
 	[36] = { name = "The Deadmines", wings = {
 		{ key = "main", bosses = {
 			{ key = "RhahkZor", ids = { 2741, 2967, 161 }, npc = { 644 } },
-			{ key = "MinerJohnson", ids = { 3676 }, npc = { 3586 }, opt = true },
+			{ key = "MinerJohnson", ids = { 3676 }, npc = { 3586 }, opt = true, rare = true },
 			{ key = "Sneed", ids = { 2742, 2968, 162 }, npc = { 642, 643 } },
 			{ key = "Gilnid", ids = { 2743, 2969, 163 }, npc = { 1763 } },
 			{ key = "MrSmite", ids = { 2745, 2970, 164 }, npc = { 646 } },
@@ -45,6 +46,9 @@ ns.DUNGEONS = {
 			{ key = "Serpentis", ids = { 590 }, npc = { 3673 } },
 			{ key = "Verdan", ids = { 591 }, npc = { 5775 } },
 			{ key = "Mutanus", ids = { 592 }, npc = { 3654 }, final = true },
+			{ key = "Trigore", ids = {  }, npc = { 3652 }, opt = true, rare = true },
+			{ key = "Boahn", ids = {  }, npc = { 3672 }, opt = true, rare = true },
+			{ key = "DeviateFaerieDragon", ids = {  }, npc = { 5912 }, opt = true, rare = true },
 		} },
 	} },
 	[48] = { name = "Blackfathom Deeps", wings = {
@@ -65,6 +69,7 @@ ns.DUNGEONS = {
 			{ key = "Hamhock", ids = { 2758 }, npc = { 1717 } },
 			{ key = "BazilThredd", ids = { 2760 }, npc = { 1716 } },
 			{ key = "DextrenWard", ids = { 2759 }, npc = { 1663 } },
+			{ key = "Bruegal", ids = {  }, npc = { 1720 }, opt = true, rare = true },
 		} },
 	} },
 	[33] = { name = "Shadowfang Keep", wings = {
@@ -77,6 +82,7 @@ ns.DUNGEONS = {
 			{ key = "Fenrus", ids = { 2753, 469 }, npc = { 4274 } },
 			{ key = "Nandos", ids = { 2754, 470 }, npc = { 3927 } },
 			{ key = "Arugal", ids = { 2755, 471 }, npc = { 4275 }, final = true },
+			{ key = "DeathswornCaptain", ids = {  }, npc = { 3872 }, opt = true, rare = true },
 		} },
 	} },
 	[47] = { name = "Razorfen Kraul", wings = {
@@ -87,6 +93,8 @@ ns.DUNGEONS = {
 			{ key = "Ramtusk", ids = { 2776, 441 }, npc = { 4420 } },
 			{ key = "Agathelos", ids = { 2777, 883 }, npc = { 4422 } },
 			{ key = "Charlga", ids = { 2778, 443 }, npc = { 4421 }, final = true },
+			{ key = "Halmgar", ids = {  }, npc = { 4842 }, opt = true, rare = true },
+			{ key = "BlindHunter", ids = {  }, npc = { 4425 }, opt = true, rare = true },
 		} },
 	} },
 	[90] = { name = "Gnomeregan", wings = {
@@ -96,12 +104,16 @@ ns.DUNGEONS = {
 			{ key = "Electrocutioner", ids = { 2770, 380 }, npc = { 6235 } },
 			{ key = "CrowdPummeler", ids = { 2771, 381 }, npc = { 6229 } },
 			{ key = "Thermaplugg", ids = { 2772, 382 }, npc = { 7800 }, final = true },
+			{ key = "DarkIronAmbassador", ids = {  }, npc = { 6228 }, opt = true, rare = true },
 		} },
 	} },
 	[189] = { name = "Scarlet Monastery", wings = {
 		{ key = "graveyard", bosses = {
 			{ key = "Vishas", ids = { 444 }, npc = { 3983 } },
 			{ key = "Thalnos", ids = { 2779, 2818, 445 }, npc = { 4543 }, final = true },
+			{ key = "FallenChampion", ids = {  }, npc = { 6488 }, opt = true, rare = true },
+			{ key = "Ironspine", ids = {  }, npc = { 6489 }, opt = true, rare = true },
+			{ key = "Azshir", ids = {  }, npc = { 6490 }, opt = true, rare = true },
 		} },
 		{ key = "library", bosses = {
 			{ key = "Loksey", ids = { 446 }, npc = { 3974 } },
@@ -120,7 +132,7 @@ ns.DUNGEONS = {
 			{ key = "Tutenkash", ids = { 2780, 434 }, npc = { 7355 } },
 			{ key = "Plaguemaw", ids = { 2781 }, npc = { 7356 }, opt = true },
 			{ key = "Mordresh", ids = { 2782, 435 }, npc = { 7357 } },
-			{ key = "Ragglesnout", ids = { 2783 }, npc = { 7354 }, opt = true },
+			{ key = "Ragglesnout", ids = { 2783 }, npc = { 7354 }, opt = true, rare = true },
 			{ key = "Glutton", ids = { 2784, 436 }, npc = { 8567 } },
 			{ key = "Amnennar", ids = { 2785, 437 }, npc = { 7358 }, final = true },
 		} },
@@ -146,6 +158,9 @@ ns.DUNGEONS = {
 			{ key = "Zumrah", ids = { 597 }, npc = { 7271 } },
 			{ key = "NekrumSezzziz", ids = { 598, 599 }, npc = { 7796, 7275 } },
 			{ key = "Ukorz", ids = { 600 }, npc = { 7267 }, final = true },
+			{ key = "Sandarr", ids = {  }, npc = { 10080 }, opt = true, rare = true },
+			{ key = "Dustwraith", ids = {  }, npc = { 10081 }, opt = true, rare = true },
+			{ key = "Zerillis", ids = {  }, npc = { 10082 }, opt = true, rare = true },
 		} },
 	} },
 	[349] = { name = "Maraudon", wings = {
@@ -158,6 +173,7 @@ ns.DUNGEONS = {
 			{ key = "Gizlock", ids = { 427 }, npc = { 13601 } },
 			{ key = "Rotgrip", ids = { 428 }, npc = { 13596 } },
 			{ key = "Theradras", ids = { 429 }, npc = { 12201 }, final = true },
+			{ key = "Meshlok", ids = {  }, npc = { 12237 }, opt = true, rare = true },
 		} },
 	} },
 	[109] = { name = "The Temple of Atal'Hakkar", wings = {
@@ -193,6 +209,7 @@ ns.DUNGEONS = {
 			{ key = "TheSeven", ids = { 243 }, npc = { 9035, 9039, 9040, 9037, 9034, 9038, 9036 } },
 			{ key = "Magmus", ids = { 244 }, npc = { 9938 } },
 			{ key = "Thaurissan", ids = { 245, 2790 }, npc = { 9019 }, final = true },
+			{ key = "Panzor", ids = {  }, npc = { 8923 }, opt = true, rare = true },
 		} },
 	} },
 	[229] = { name = "Blackrock Spire", wings = {
@@ -206,6 +223,13 @@ ns.DUNGEONS = {
 			{ key = "Gizrul", ids = { 273 }, npc = { 10268 }, opt = true },
 			{ key = "Halycon", ids = { 274 }, npc = { 10220 } },
 			{ key = "Wyrmthalak", ids = { 275 }, npc = { 9568 }, final = true },
+			{ key = "SpirestoneLordMagus", ids = {  }, npc = { 9217 }, opt = true, rare = true },
+			{ key = "SpirestoneBattleLord", ids = {  }, npc = { 9218 }, opt = true, rare = true },
+			{ key = "SpirestoneButcher", ids = {  }, npc = { 9219 }, opt = true, rare = true },
+			{ key = "Bannok", ids = {  }, npc = { 9596 }, opt = true, rare = true },
+			{ key = "Ghok", ids = {  }, npc = { 9718 }, opt = true, rare = true },
+			{ key = "CrystalFang", ids = {  }, npc = { 10376 }, opt = true, rare = true },
+			{ key = "BurningFelguard", ids = {  }, npc = { 10263 }, opt = true, rare = true },
 		} },
 		{ key = "upper", bosses = {
 			{ key = "Emberseer", ids = { 3062, 276 }, npc = { 9816 } },
@@ -214,6 +238,7 @@ ns.DUNGEONS = {
 			{ key = "TheBeast", ids = { 3068, 279 }, npc = { 10430 } },
 			{ key = "Valthalak", ids = { 3070 }, npc = { 16042 }, opt = true },
 			{ key = "Drakkisath", ids = { 3069, 280 }, npc = { 10363 }, final = true },
+			{ key = "Jed", ids = {  }, npc = { 10509 }, opt = true, rare = true },
 		} },
 	} },
 	[429] = { name = "Dire Maul", wings = {
@@ -268,6 +293,8 @@ ns.DUNGEONS = {
 			{ key = "Galford", ids = { 477 }, npc = { 10811 } },
 			{ key = "Postmaster", ids = { 1885, 2798 }, npc = { 11143 }, opt = true },
 			{ key = "Balnazzar", ids = { 478 }, npc = { 10813, 10812 }, final = true },
+			{ key = "Skul", ids = {  }, npc = { 10393 }, opt = true, rare = true },
+			{ key = "Stonespine", ids = {  }, npc = { 10809 }, opt = true, rare = true },
 		} },
 		{ key = "undead", bosses = {
 			{ key = "Barthilas", ids = { 482 }, npc = { 10435 }, opt = true },
