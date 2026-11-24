@@ -480,6 +480,34 @@ do
 	check("options: buttons for introduction and news, checkbox", panel.Tour and panel.News and panel.NewsCheck)
 end
 
+print("Repair costs through the events")
+do
+	local gear = { [1] = { id = 100, cost = 0 }, [7] = { id = 200, cost = 0 } }
+	local tipCost = { [1] = 0, [7] = 0 } -- what the tooltip shows (can lag behind)
+	_G.GetInventoryItemID = function(_, slot) return gear[slot] and gear[slot].id end
+	_G.C_TooltipInfo = { GetInventoryItem = function(_, slot) return { repairCost = tipCost[slot] } end }
+	local run = ns.Run.New(47, "Kral von Razorfen", ns.Now())
+	fire("UPDATE_INVENTORY_DURABILITY")
+	tipCost[1], tipCost[7] = 50, 30
+	fire("UPDATE_INVENTORY_DURABILITY")
+	check("damage counts", run.repair == 80, run.repair)
+	tipCost[1] = 90 -- damage the tooltip shows only after the gear change
+	gear[7] = { id = 201 }
+	tipCost[7] = 5
+	fire("PLAYER_EQUIPMENT_CHANGED", 7, false)
+	check("gear change: other slots keep their base, new item starts at its own cost", run.repair == 120, run.repair)
+	tipCost[7] = 15
+	fire("UPDATE_INVENTORY_DURABILITY")
+	check("new item: its damage counts from there", run.repair == 130, run.repair)
+	tipCost[1], tipCost[7] = 0, 0
+	fire("MERCHANT_CLOSED")
+	tipCost[1] = 20
+	fire("UPDATE_INVENTORY_DURABILITY")
+	check("repaired at a vendor mid-run: new base, damage after it counts", run.repair == 150, run.repair)
+	ns.Run.End("test")
+	_G.C_TooltipInfo, _G.GetInventoryItemID = nil, nil
+end
+
 print("Minimap button")
 do
 	local ldb = LibStub:NewLibrary("LibDataBroker-1.1", 1)

@@ -250,8 +250,11 @@ end
 
 -- repair costs: durability changes count, gear changes and repairs only move the base
 function handlers.UPDATE_INVENTORY_DURABILITY() sampleRepair() end
-function handlers.PLAYER_EQUIPMENT_CHANGED() sampleRepair(true) end
-function handlers.MERCHANT_CLOSED() sampleRepair() end
+-- Gear change: the slot with the new item is re-based by its item ID; the other slots keep
+-- their base, so damage the tooltips hadn't shown yet is not lost (Kral, 24.11.2026: ~1s lost).
+function handlers.PLAYER_EQUIPMENT_CHANGED() sampleRepair() end
+-- Repaired at a vendor (also a repair bot inside the dungeon): costs went down, new base.
+function handlers.MERCHANT_CLOSED() sampleRepair(true) end
 
 function handlers.GROUP_ROSTER_UPDATE() updateRoster() end
 
@@ -348,7 +351,11 @@ if C_Timer and C_Timer.NewTicker then
 	C_Timer.NewTicker(30, function()
 		if not ns.db then return end
 		local run = ns.Run.Current()
-		if run and run.state == "active" then run.lastSeen = ns.Now() end
+		if run and run.state == "active" then
+			run.lastSeen = ns.Now()
+			-- tooltips can lag behind UPDATE_INVENTORY_DURABILITY: catch up regularly
+			sampleRepair()
+		end
 		ns.Run.CheckTimeout()
 	end)
 end
