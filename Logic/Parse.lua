@@ -53,7 +53,7 @@ end
 -- Matches `text` against a format string; returns the arguments in the format's own order.
 local cache = {}
 function Parse.Match(fmt, text, anchored)
-	if type(fmt) ~= "string" or type(text) ~= "string" then return nil end
+	if type(fmt) ~= "string" or type(text) ~= "string" or ns.IsSecret(text) then return nil end
 	local id = fmt .. (anchored == false and "\1" or "")
 	local entry = cache[id]
 	if entry == nil then
@@ -227,7 +227,7 @@ end
 
 -- "Creature-0-<server>-<instance>-<zoneUID>-<npcID>-<spawn>" -> npcID, instanceID, zoneUID
 function Parse.CreatureGUID(guid)
-	if type(guid) ~= "string" then return nil end
+	if type(guid) ~= "string" or ns.IsSecret(guid) then return nil end
 	local kind, _, _, instance, zone, npc = strsplit("-", guid)
 	if kind ~= "Creature" and kind ~= "Vehicle" then return nil end
 	return tonumber(npc), tonumber(instance), zone

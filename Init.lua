@@ -24,6 +24,22 @@ function ns.NormalizeLocale(locale)
 end
 
 -- Calls a function only if it exists; never raises. Returns the function's results or nil.
+--[[
+Secret values (Forever, like Retail): in instances the client hands out some values sealed -
+GUIDs of nameplates/targets in combat, some chat lines. Touching them (compare, strsplit,
+match) is blocked and lands in the taint log (Kral, 24.11.2026: ~16,000 entries). Every value
+from a unit function or an event goes through ns.Plain first: sealed -> nil, skipped.
+]]
+function ns.IsSecret(v)
+	local issecret = _G.issecretvalue
+	return issecret ~= nil and v ~= nil and issecret(v) == true
+end
+
+function ns.Plain(v)
+	if ns.IsSecret(v) then return nil end
+	return v
+end
+
 function ns.TryCall(fn, ...)
 	if type(fn) ~= "function" then return nil end
 	local results = { pcall(fn, ...) }

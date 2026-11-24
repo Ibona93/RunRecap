@@ -148,7 +148,7 @@ local function updateRoster()
 	if not run or not UnitName then return end
 	local group = {}
 	for _, unit in ipairs({ "player", "party1", "party2", "party3", "party4" }) do
-		local name = UnitName(unit)
+		local name = ns.Plain(UnitName(unit))
 		if not ns.Run.IsPlaceholder(name) and (not UnitExists or UnitExists(unit)) then
 			local class = UnitClass and select(2, UnitClass(unit))
 			ns.Run.SetPlayer(run, name, class)
@@ -163,10 +163,12 @@ local UNITS = { player = true, party1 = true, party2 = true, party3 = true, part
 local function checkUnit(unit)
 	local run = ns.Run.Current()
 	if not run or not UNITS[unit] or not UnitName then return end
-	local name = UnitName(unit)
+	local name = ns.Plain(UnitName(unit))
 	if not name then return end
-	local dead = UnitIsDeadOrGhost and UnitIsDeadOrGhost(unit) and true or false
-	if dead and UnitIsFeignDeath and UnitIsFeignDeath(unit) then dead = false end
+	local isDead = UnitIsDeadOrGhost and ns.Plain(UnitIsDeadOrGhost(unit))
+	if isDead == nil and UnitIsDeadOrGhost then return end -- sealed: try again next event
+	local dead = isDead and true or false
+	if dead and UnitIsFeignDeath and ns.Plain(UnitIsFeignDeath(unit)) then dead = false end
 	ns.Run.OnUnitState(run, name, dead)
 end
 
@@ -178,10 +180,11 @@ local function lootWindow()
 	for slot = 1, GetNumLootItems() or 0 do
 		local link = GetLootSlotLink and GetLootSlotLink(slot)
 		if link and GetLootSourceInfo then
-			local guid = ns.TryCall(GetLootSourceInfo, slot)
+			local guid = ns.Plain(ns.TryCall(GetLootSourceInfo, slot))
 			local npc = ns.Parse.CreatureGUID(guid)
 			-- the name of the dead NPC, if it is the target (for a kill without ENCOUNTER_END)
-			local npcName = guid and UnitGUID and UnitGUID("target") == guid and UnitName("target") or nil
+			local target = guid and UnitGUID and ns.Plain(UnitGUID("target"))
+			local npcName = target and target == guid and ns.Plain(UnitName("target")) or nil
 			slots[#slots + 1] = { link = link, npc = npc, npcName = npcName }
 		end
 	end
@@ -298,11 +301,22 @@ function handlers.PLAYER_DEAD()
 end
 -- a dead boss in sight (target, focus, nameplate, mouseover) is a kill, even if no
 -- ENCOUNTER_END comes (Elektrokutionator 6000)
+-- Only out of combat: in combat the GUIDs are sealed (secret values). After the fight they are
+-- readable again, and PLAYER_REGEN_ENABLED looks at the target and the nameplates once more.
 local function checkBoss(unit)
 	local run = ns.Run.Current()
 	if not run or not unit or UNITS[unit] or not UnitGUID or not UnitIsDead then return end
-	local npc = ns.Parse.CreatureGUID(UnitGUID(unit))
-	if npc and UnitIsDead(unit) then ns.Run.OnBossDead(run, npc, UnitName(unit)) end
+	if InCombatLockdown and InCombatLockdown() then return end
+	local npc = ns.Parse.CreatureGUID(ns.Plain(UnitGUID(unit)))
+	if npc and ns.Plain(UnitIsDead(unit)) then ns.Run.OnBossDead(run, npc, ns.Plain(UnitName(unit))) end
+end
+
+local function checkBossesInSight()
+	checkBoss("target")
+	for i = 1, 40 do
+		local unit = "nameplate" .. i
+		if UnitExists and UnitExists(unit) then checkBoss(unit) end
+	end
 end
 
 function handlers.UNIT_HEALTH(unit)
@@ -330,13 +344,28 @@ handlers.PLAYER_UNGHOST = aliveAgain
 
 
 function handlers.PLAYER_REGEN_ENABLED()
+	checkBossesInSight()
 	if ns.Banner and ns.Banner.OnCombatEnd then ns.Banner.OnCombatEnd() end
 end
 
 frame:SetScript("OnEvent", function(_, event, ...)
 	local handler = handlers[event]
 	if not handler or (event ~= "ADDON_LOADED" and not ns.db) then return end
-	local ok, err = pcall(handler, ...)
+	-- sealed event arguments (secret values) are passed on as nil
+	local n, sealed = select("#", ...), false
+	for i = 1, n do
+		if ns.IsSecret((select(i, ...))) then sealed = true break end
+	end
+	local ok, err
+	if sealed then
+		local args = { ... }
+		for i = 1, n do
+			if ns.IsSecret(args[i]) then args[i] = nil end
+		end
+		ok, err = pcall(handler, unpack(args, 1, n))
+	else
+		ok, err = pcall(handler, ...)
+	end
 	if not ok then ns.Debug(event .. " failed: " .. tostring(err)) end
 end)
 

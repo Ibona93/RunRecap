@@ -71,6 +71,8 @@ Money (own only): looted gold share (`CHAT_MSG_MONEY`) + gold of quests handed i
 
 Kills: `ENCOUNTER_END`; Forever sometimes sends none (Elektrokutionator 6000, Gnomeregan). Then a dead known boss NPC in sight (target, nameplate, mouseover: `UNIT_HEALTH`, `PLAYER_TARGET_CHANGED`) or its loot window adds the kill (`Run.OnBossDead`, no fight time); during its own encounter it waits for `ENCOUNTER_END`, which later adds the fight time. Wipes: `ENCOUNTER_END` with success 0, and outside a boss fight a group wipe (everyone dead, or all but one in a group of 4+), counted once until everyone is alive again. Placeholder names (`UNKNOWNOBJECT`) are ignored.
 
+Secret values: in instances Forever seals some values (nameplate/target GUIDs in combat, some chat lines), like Retail. Touching them is blocked and logged as taint. Event arguments that are sealed arrive as nil (dispatcher in `Core.lua`), unit function results go through `ns.Plain`, `Parse.Match`/`Parse.CreatureGUID` skip them, and the dead-boss check runs only out of combat (again on `PLAYER_REGEN_ENABLED` for target and nameplates).
+
 Highlights (`Run.Highlights`): candidates fastest boss, toughest boss (most wipes, else longest fight), most loot, most deaths, luckiest roll, unlucky (need rolls, never won), best item; each gets a 0-100 score for how remarkable it is, the 4 best are shown (ties: that order). The facts box is as tall as its content, the highlights box takes the rest.
 
 `/recap demo` shows the success moment with a made-up Deadmines run (`UI/Demo.lua`); nothing is saved.

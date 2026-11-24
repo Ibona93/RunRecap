@@ -508,6 +508,37 @@ do
 	_G.C_TooltipInfo, _G.GetInventoryItemID = nil, nil
 end
 
+print("Secret values (sealed in instances)")
+do
+	local SECRET = setmetatable({}, { __tostring = function() error("touched a secret value") end })
+	local touched = false
+	local mt = { __eq = function() touched = true end, __concat = function() touched = true end, __index = function() touched = true end }
+	setmetatable(SECRET, mt)
+	_G.issecretvalue = function(v) return v == nil and false or rawequal(v, SECRET) end
+	local run = ns.Run.New(47, "Kral von Razorfen", ns.Now())
+	local combat = true
+	_G.InCombatLockdown = function() return combat end
+	_G.UnitGUID = function(unit) if unit == "player" then return "Player-1-1" end return SECRET end
+	_G.UnitIsDead = function() return true end
+	_G.UnitExists = function(unit) return unit == "nameplate1" end
+	local ok, err = pcall(fire, "UNIT_HEALTH", "nameplate1")
+	check("nameplate in combat: nothing touched", ok and not touched, err)
+	ok, err = pcall(fire, "CHAT_MSG_SYSTEM", SECRET)
+	check("sealed chat line: skipped", ok and not touched, err)
+	ok, err = pcall(fire, "CHAT_MSG_LOOT", SECRET, SECRET)
+	check("sealed loot line: skipped", ok and not touched, err)
+	check("IsSecret / Plain", ns.IsSecret(SECRET) and ns.Plain(SECRET) == nil and ns.Plain("x") == "x" and not ns.IsSecret(nil))
+	-- after the fight the GUID is readable: the dead boss (Elektrokutionator 6000) counts
+	combat = false
+	run.mapID = 90
+	_G.UnitGUID = function(unit) if unit == "nameplate1" then return "Creature-0-1-90-1-6235-1" end return nil end
+	_G.UnitName = function(unit) if unit == "nameplate1" then return "Elektrokutionator 6000" end return "Ibona" end
+	ok, err = pcall(fire, "PLAYER_REGEN_ENABLED")
+	check("after combat: dead boss on a nameplate is the kill", ok and run.killed.Electrocutioner ~= nil, err)
+	ns.Run.End("test")
+	_G.issecretvalue, _G.UnitIsDead, _G.UnitExists = nil, nil, nil
+end
+
 print("Minimap button")
 do
 	local ldb = LibStub:NewLibrary("LibDataBroker-1.1", 1)
