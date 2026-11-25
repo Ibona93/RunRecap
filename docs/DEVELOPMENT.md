@@ -59,7 +59,8 @@ The file is written on logout or `/reload`: `_forever_/WTF/Account/<ACCOUNT>/Sav
 | leave as ghost | run keeps going (`UnitIsDeadOrGhost("player")`) |
 | leave alive | paused, pause time not counted; alive again outside after a ghost run = pause too |
 | end | other instance, `INSTANCE_RESET_SUCCESS` while paused, 30 min paused, login ≥ 30 min after last activity; back in the same dungeon after a completed run (left alive) starts a new run. (The creature-GUID copy check was removed on 23.11.2026: it restarted a run in the middle of Dalaran.) |
-| history | completed runs → `RunRecapDB.runs` (last 20); aborted runs are dropped |
+| history | completed runs → `RunRecapDB.runs` (last 20 per character, `run.char` = name/realm/class; untagged pre-1.0.2 runs count as one group); aborted runs are dropped |
+| characters (1.0.2) | `Run.Latest` (recap, `/recap`, minimap) = last run of the logged-in character plus untagged old runs; `RunRecapDB.allChars` = account-wide. Another character's run in progress is not `Run.Current()`: paused outside, ended when this character enters an instance |
 
 Names: Forever's unit functions give the first name, chat lines the full name; a first name with exactly one matching full name is merged into it (`run.alias`).
 
@@ -107,6 +108,7 @@ Offline tests can't replace the game. Before testing, enter `/console taintLog 1
 | 12 | `/recap` after a completed run; `/recap` with none | toggles the recap; "No recap yet" |
 | 13 | Taint log after the dungeon | no lines with RunRecap |
 | 14 | Minimap button: left-click, right-click, drag, hide in the options, tooltip | recap of the last run; options (after combat if in combat); position kept after /reload; hidden after /reload |
+| 15 | Runs per character (1.0.2): main with a run, log in an alt; alt does a run; option "all characters" on/off | alt: "no run with this character yet" (chat + minimap tooltip); then its own run; option on: account's newest run with the name in the header; main again: his run |
 
 ## Files
 

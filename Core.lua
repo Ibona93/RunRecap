@@ -12,10 +12,11 @@ ns.DEFAULTS = {
 	autoOpen = true,        -- banner + recap after the last boss
 	sound = 878,            -- success sound kit ID ("Quest complete"), 0 = off
 	showGreen = false,      -- list green items (otherwise counted as hidden)
+	allChars = false,       -- 1.0.2: recap/minimap show the last run of any character (off: own + untagged)
 	skin = "blizzard",      -- recap window look: "blizzard" (native) or "recap" (dark & gold)
 	tourSeen = false,       -- introduction tour shown once at login (instead of "What's new")
 	showWhatsNew = true,    -- "What's new" window after updates (lastSeenVersion: last shown)
-	runs = {},              -- finished, completed runs (newest last, max. 20)
+	runs = {},              -- finished, completed runs (newest last, max. 20 per character; run.char)
 	currentRun = nil,       -- the run in progress, saved continuously so /reload loses nothing
 	learned = {},           -- [itemID] = "mapID:bossKey", learned from sure loot sources
 	learnedNpc = {},        -- [npcID] = "mapID:bossKey", boss NPCs learned (Forever dungeons have no NPC data)
@@ -66,6 +67,13 @@ function ns.MyName()
 	if ns.selfFullName then return ns.selfFullName end
 	local name = UnitName and UnitName("player")
 	return ns.Parse.ShortName(name)
+end
+
+-- Message when there is nothing to show: no run at all, or none of this character (1.0.2).
+function ns.NoRecapText(short)
+	local L = ns.L
+	if ns.Run.HasAny() then return short and L.MINIMAP_NONE_CHAR or L.NO_RECAP_CHAR end
+	return short and L.MINIMAP_NONE or L.NO_RECAP_YET
 end
 
 function ns.ItemQualityFallback(link)
@@ -431,7 +439,7 @@ SlashCmdList.RUNRECAP = function(msg)
 		if run and ns.Recap then
 			ns.Recap.Toggle(run)
 		else
-			ns.Print(L.NO_RECAP_YET)
+			ns.Print(ns.NoRecapText())
 		end
 	else
 		ns.Print(L.SLASH_HELP)

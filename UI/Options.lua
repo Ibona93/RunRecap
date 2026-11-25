@@ -2,8 +2,8 @@ local _, ns = ...
 
 --[[
 Options: AddOns section of the game settings (as in BGF), falls back to a standalone window.
-0.1 has one page: open automatically, green items, look (skin), success sound (choice,
-preview, off), preview of banner and recap. Always native look, whatever the recap skin.
+One page: open automatically, green items, minimap button, runs of all characters (1.0.2),
+look (skin), success sound (choice, preview, off), preview of banner and recap. Always native look, whatever the recap skin.
 ]]
 
 local Options = {}
@@ -57,8 +57,18 @@ local function build()
 		function(v) ns.MinimapButton.SetShown(v) end)
 	minimap:SetPoint("TOPLEFT", green, "BOTTOMLEFT", 0, -4)
 
+	local allChars = W.Check(panel, L.OPT_ALL_CHARS, function() return ns.db.allChars end, function(v)
+		ns.db.allChars = v
+		if ns.Recap and ns.Recap.IsShown() then ns.Recap.Render() end
+	end)
+	allChars:SetPoint("TOPLEFT", minimap, "BOTTOMLEFT", 0, -4)
+	local allCharsHint = W.Text(panel, ns.Fonts.Game(11), W.GREY)
+	allCharsHint:SetPoint("TOPLEFT", allChars.Label, "BOTTOMLEFT", 0, -2)
+	allCharsHint:SetWidth(560)
+	allCharsHint:SetText(L.OPT_ALL_CHARS_HINT)
+
 	local skinLabel = W.Text(panel, ns.Fonts.Game(12), { 1, 1, 1 })
-	skinLabel:SetPoint("TOPLEFT", minimap, "BOTTOMLEFT", 4, -22)
+	skinLabel:SetPoint("TOPLEFT", allChars, "BOTTOMLEFT", 4, -40)
 	skinLabel:SetWidth(130)
 	skinLabel:SetText(L.OPT_SKIN)
 	local skinDrop
@@ -138,6 +148,7 @@ local function build()
 	panel:SetScript("OnShow", refreshSound)
 	if ns.db then refreshSound() end
 	panel.Auto, panel.Green, panel.Minimap, panel.SoundButton, panel.Play, panel.Preview, panel.SkinDrop = auto, green, minimap, soundButton, play, preview, skinDrop
+	panel.AllChars = allChars
 
 	if Settings and Settings.RegisterCanvasLayoutCategory and Settings.RegisterAddOnCategory then
 		local ok, cat = pcall(Settings.RegisterCanvasLayoutCategory, panel, L.ADDON_TITLE)
@@ -149,7 +160,7 @@ local function build()
 	end
 	-- Fallback: standalone window
 	container = W.NativeWindow("RunRecapOptionsWindow", UIParent)
-	container:SetSize(660, 470)
+	container:SetSize(660, 520)
 	container:SetPoint("CENTER")
 	container:SetFrameStrata("DIALOG")
 	container:EnableMouse(true)

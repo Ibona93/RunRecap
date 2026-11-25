@@ -689,5 +689,77 @@ do
 	_G.RunRecapDB = nil
 end
 
+print("Runs per character (1.0.2)")
+do
+	local R = ns.Run
+	local me = "Ibona"
+	_G.UnitName = function(u) if u == "player" then return me end end
+	_G.UnitClass = function(u) if u == "player" then return "Hexenmeister", me == "Ibona" and "WARLOCK" or "PRIEST" end end
+	_G.GetRealmName = function() return "Forever" end
+	_G.RunRecapDB = { runs = { { name = "alt (vor 1.0.2)", completed = true } } }
+	ns.InitDB()
+	local d = ns.db
+	check("MyChar: name, realm, class", R.MyChar().name == "Ibona" and R.MyChar().realm == "Forever" and R.MyChar().class == "WARLOCK")
+	check("untagged old run shown for every character", R.Latest() == d.runs[1])
+	local function finish(name)
+		local run = R.New(389, name, 100)
+		run.completed = true
+		R.End("test")
+		return run
+	end
+	local mainRun = finish("Ragefireabgrund")
+	check("new run remembers its character", mainRun.char and mainRun.char.name == "Ibona" and mainRun.char.realm == "Forever"
+		and mainRun.char.class == "WARLOCK")
+	check("main: own run is the latest", R.Latest() == mainRun)
+	me = "Twinky"
+	check("twink: untagged old run instead of the main's", R.Latest() == d.runs[1] and R.IsForeign(mainRun, R.MyChar()))
+	check("HasAny is true (runs of others exist)", R.HasAny())
+	d.allChars = true
+	check("option all characters: the account's last run", R.Latest() == mainRun)
+	d.allChars = false
+	local twinkRun = finish("Kloster")
+	check("twink: its own run", R.Latest() == twinkRun and twinkRun.char.class == "PRIEST")
+	me = "Ibona"
+	check("main again: his run", R.Latest() == mainRun)
+	d.runs = { mainRun }
+	me = "Twinky"
+	check("twink without own or untagged run: nothing", R.Latest() == nil and ns.NoRecapText() == ns.L.NO_RECAP_CHAR
+		and ns.NoRecapText(true) == ns.L.MINIMAP_NONE_CHAR)
+	d.runs = {}
+	check("no runs at all: the old message", ns.NoRecapText() == ns.L.NO_RECAP_YET)
+
+	-- history: 20 per character, a twink does not push out the main's runs
+	me = "Ibona"
+	for i = 1, 5 do finish("Main " .. i) end
+	me = "Twinky"
+	for i = 1, 25 do finish("Twink " .. i) end
+	table.insert(d.runs, 1, { name = "alt" })
+	R.TrimHistory(d.runs)
+	local count = {}
+	for _, r in ipairs(d.runs) do local k = R.CharKey(r.char) count[k] = (count[k] or 0) + 1 end
+	check("history: 20 for the twink, the main's 5 and the old one stay", count["Twinky-Forever"] == 20
+		and count["Ibona-Forever"] == 5 and count[""] == 1 and d.runs[#d.runs].name == "Twink 25", tostring(#d.runs))
+
+	-- a run in progress of another character: left alone outside, over when entering an instance
+	d.runs = {}
+	me = "Ibona"
+	local inside = { inInstance = true, instanceType = "party", mapID = 389, name = "Ragefireabgrund" }
+	local run = R.OnZone(inside, 1000)
+	run.lastSeen = 1100
+	me = "Twinky"
+	check("other character's run is not the current one", R.Current() == nil and d.currentRun == run)
+	R.OnZone({ inInstance = false, dead = false }, 1500)
+	check("outside: other character's run paused at its last sighting, kept", d.currentRun == run and run.state == "paused" and run.pausedAt == 1100)
+	me = "Ibona"
+	R.OnZone(inside, 1600)
+	check("main back in the dungeon: same run continues", R.Current() == run and run.state == "active")
+	me = "Twinky"
+	local twinkCurrent = R.OnZone(inside, 1700)
+	check("twink enters the same dungeon: main's run is over, a new run of the twink", twinkCurrent ~= run
+		and twinkCurrent.char.name == "Twinky" and d.currentRun == twinkCurrent and run.endReason == "other character")
+	R.End("test")
+	_G.UnitName, _G.UnitClass, _G.GetRealmName, _G.RunRecapDB = nil, nil, nil, nil
+end
+
 print(("\n%d passed, %d failed"):format(passed, failed))
 os.exit(failed == 0 and 0 or 1)

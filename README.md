@@ -46,9 +46,9 @@ Sister addon: [BGF – Better Group Finder Forever](https://github.com/Ibona93/B
 | `/recap debug` | Debug output on/off, shows version, client build, interface number and the current run |
 | `/recap help` | List the commands |
 
-Minimap button: left-click opens the recap of the last run, right-click the options; it can be dragged around the minimap and hidden in the options. Minimap button collectors and broker bars (Titan Panel, ChocolateBar) pick it up.
+Minimap button: left-click opens the recap of the last run (of the character you are playing; option "Show runs of all characters" for all), right-click the options; it can be dragged around the minimap and hidden in the options. Minimap button collectors and broker bars (Titan Panel, ChocolateBar) pick it up.
 
-**Options:** open automatically (on/off), show green items too (default: blue and better), look (Blizzard or Run Recap), success sound (7 game sounds or off, with preview), preview.
+**Options:** open automatically (on/off), show green items too (default: blue and better), show runs of all characters (default: only the character you are playing), look (Blizzard or Run Recap), success sound (7 game sounds or off, with preview), preview.
 
 ## 4. Known limitations
 
@@ -61,6 +61,10 @@ Minimap button: left-click opens the recap of the last run, right-click the opti
 Bug reports and ideas: [GitHub Issues](https://github.com/Ibona93/RunRecap/issues). Technical notes and tests: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 
 ## 6. Changelog
+
+### 1.0.2 (25.11.2026)
+- Runs per character: `/recap` and the minimap button show the last run of the character you are playing, no longer your main's run on an alt. Runs from before 1.0.2 are shown for every character. The last 20 runs are kept per character.
+- New option "Show runs of all characters" (off by default): shows the account's last run as before, with the character's name in the recap.
 
 ### 1.0.1 (25.11.2026)
 - Fixed: rolls on items whose name contains the roll line's own words (in German e.g. "[Mantel von Doan]") were stored under wrong player names – the run facts then listed made-up players under "Deaths". Runs saved with this error are repaired automatically.

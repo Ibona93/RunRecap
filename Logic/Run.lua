@@ -11,7 +11,14 @@ The run: one visit to a dungeon instance, from entering it until it ends.
     GUIDs - unreliable in Forever, it restarted a run in the middle of Dalaran.)
   * completed when a wing is complete (Logic/Dungeons.lua); the run keeps recording after
     that, because the end boss's loot is rolled for afterwards
-  * finished runs that were completed go to RunRecapDB.runs (last 20); others are dropped
+  * finished runs that were completed go to RunRecapDB.runs (last 20 per character); others
+    are dropped
+  * 1.0.2: every run remembers its character (run.char = { name, realm, class }). The recap,
+    /recap and the minimap button show the last run of the logged-in character; runs recorded
+    before 1.0.2 have no character and count for every character. Option "runs of all
+    characters" (RunRecapDB.allChars) shows the account's last run as before. A run in
+    progress of another character is left alone (paused) until this character enters an
+    instance - then it is over, a run never continues on another character.
 
 Loot -> source (no shipped loot tables):
   1. own loot window: GetLootSourceInfo -> NPC -> boss (from the data or learned), otherwise
@@ -51,9 +58,63 @@ end
 
 local function db() return ns.db end
 
+-------------------------------------------------------------------------------
+-- Characters (1.0.2)
+-------------------------------------------------------------------------------
+
+-- The logged-in character: { name, realm, class } or nil (API missing / sealed).
+function Run.MyChar()
+	local name = ns.Plain(UnitName and UnitName("player"))
+	if type(name) ~= "string" or name == "" then return nil end
+	local realm = ns.Plain(GetRealmName and GetRealmName())
+	local class = UnitClass and ns.Plain(select(2, UnitClass("player")))
+	return { name = ns.Parse.ShortName(name), realm = type(realm) == "string" and realm or nil,
+		class = type(class) == "string" and class or nil }
+end
+
+-- Key of a character ("Name-Realm"); "" for runs without a character (recorded before 1.0.2).
+function Run.CharKey(char)
+	if type(char) ~= "table" or not char.name then return "" end
+	return char.name .. "-" .. (char.realm or "")
+end
+
+-- Run of this very character (not untagged).
+function Run.IsOwn(run, me)
+	return run ~= nil and run.char ~= nil and me ~= nil and Run.CharKey(run.char) == Run.CharKey(me)
+end
+
+-- Run of another character (untagged runs belong to nobody, so: false).
+function Run.IsForeign(run, me)
+	return run ~= nil and run.char ~= nil and me ~= nil and Run.CharKey(run.char) ~= Run.CharKey(me)
+end
+
+-- Shown for this character: own runs and untagged old runs; all runs with the option on.
+function Run.Visible(run, me)
+	if not run then return false end
+	local d = db()
+	if (d and d.allChars) or not me then return true end
+	return not Run.IsForeign(run, me)
+end
+
+-- Keeps the newest Run.HISTORY runs per character (untagged runs count as one more "character").
+function Run.TrimHistory(runs)
+	local seen, keep = {}, {}
+	for i = #runs, 1, -1 do
+		local key = Run.CharKey(runs[i].char)
+		seen[key] = (seen[key] or 0) + 1
+		keep[i] = seen[key] <= Run.HISTORY
+	end
+	for i = #runs, 1, -1 do
+		if not keep[i] then table.remove(runs, i) end
+	end
+end
+
+-- The run in progress of this character (nil if there is none or it belongs to another one).
 function Run.Current()
 	local d = db()
-	return d and d.currentRun
+	local run = d and d.currentRun
+	if run and Run.IsForeign(run, Run.MyChar()) then return nil end
+	return run
 end
 
 -------------------------------------------------------------------------------
@@ -88,6 +149,7 @@ function Run.New(mapID, name, now)
 		money = 0,          -- own share of looted gold (copper)
 		vendor = 0,         -- vendor value of own loot, without items won with need (copper)
 		repair = 0,         -- own repair costs that came up during the run (copper)
+		char = Run.MyChar(), -- 1.0.2: { name, realm, class } of the character who ran it
 	}
 	d.currentRun = run
 	ns.Debug("run started: " .. tostring(name) .. " (" .. tostring(mapID) .. ")")
@@ -123,19 +185,32 @@ function Run.End(reason)
 		if run.pausedAt then run.pausedAt = nil end
 		run.state = "finished"
 		d.runs[#d.runs + 1] = run
-		while #d.runs > Run.HISTORY do table.remove(d.runs, 1) end
+		Run.TrimHistory(d.runs)
 	end
 	ns.Debug("run ended (" .. tostring(reason) .. ")" .. (run.completed and ", kept" or ", dropped"))
 	changed(run)
 	return run
 end
 
--- The run the recap window shows: the current one once completed, else the last finished one.
-function Run.Latest()
+-- The run the recap window shows: the current one once completed, else the last finished one -
+-- of this character (plus untagged old runs), or of all characters with the option on.
+function Run.Latest(me)
 	local d = db()
 	if not d then return nil end
-	if d.currentRun and d.currentRun.completed then return d.currentRun end
-	return d.runs[#d.runs]
+	me = me or Run.MyChar()
+	local cur = d.currentRun
+	if cur and cur.completed and Run.Visible(cur, me) then return cur end
+	for i = #d.runs, 1, -1 do
+		if Run.Visible(d.runs[i], me) then return d.runs[i] end
+	end
+	return nil
+end
+
+-- Any saved run at all (of any character)? Tells "no run with this character" from "no run yet".
+function Run.HasAny()
+	local d = db()
+	if not d then return false end
+	return (d.currentRun and d.currentRun.completed) or (d.runs and #d.runs > 0) or false
 end
 
 --[[
@@ -144,6 +219,16 @@ Decides start / resume / pause / end.
 ]]
 function Run.OnZone(info, now)
 	now = now or ns.Now()
+	local d = db()
+	local other = d and d.currentRun
+	if other and Run.IsForeign(other, Run.MyChar()) then
+		if info.inInstance then
+			-- another character's run never continues here: it is over
+			Run.End("other character")
+		elseif other.state == "active" then
+			Run.Pause(other, other.lastSeen or now)
+		end
+	end
 	local run = Run.Current()
 	local dungeon = info.inInstance and info.instanceType == "party" and ns.DUNGEONS[info.mapID]
 	if run then

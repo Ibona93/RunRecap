@@ -468,8 +468,8 @@ do
 	ok, err = pcall(fire, "PLAYER_ENTERING_WORLD", false, true)
 	local news = _G.RunRecapWhatsNew
 	check("after an update the news window opens once", ok and news and news:IsShown() and ns.db.lastSeenVersion == ns.VERSION, err)
-	check("news: page of the newest version (1.0.1)", ns.WhatsNew.Frame().version == "1.0.1"
-		and news.Title.__text == "Run Recap 1.0.1")
+	check("news: page of the newest version (1.0.2)", ns.WhatsNew.Frame().version == "1.0.2"
+		and news.Title.__text == "Run Recap 1.0.2")
 	news:Hide()
 	pcall(fire, "PLAYER_ENTERING_WORLD", false, true)
 	check("not again at the next /reload", not news:IsShown())
@@ -540,7 +540,7 @@ do
 	combat = false
 	run.mapID = 90
 	_G.UnitGUID = function(unit) if unit == "nameplate1" then return "Creature-0-1-90-1-6235-1" end return nil end
-	_G.UnitName = function(unit) if unit == "nameplate1" then return "Elektrokutionator 6000" end return "Ibona" end
+	_G.UnitName = function(unit) if unit == "nameplate1" then return "Elektrokutionator 6000" end return unitNames[unit] end
 	ok, err = pcall(fire, "PLAYER_REGEN_ENABLED")
 	check("after combat: dead boss on a nameplate is the kill", ok and run.killed.Electrocutioner ~= nil, err)
 	ns.Run.End("test")
@@ -674,6 +674,63 @@ do
 	pcall(ns.Options.Open)
 	check("options in combat: not opened now, note in chat", #chat == chatBefore + 1)
 	combat = false
+end
+
+print("Runs per character (1.0.2)")
+do
+	local d = ns.db
+	local savedRuns, savedCurrent, savedAll = d.runs, d.currentRun, d.allChars
+	if ns.Recap.IsShown() then ns.Recap.Hide() end
+	local function made(char, name)
+		return { id = 900, mapID = 389, name = name, date = ns.Now(), startedAt = ns.Now() - 600, pausedTotal = 0,
+			state = "finished", completed = true, completedAt = 600, kills = {}, killed = {}, wings = {}, completedWings = {},
+			wipes = 0, bossWipes = {}, bossDeaths = {}, deaths = {}, deadNow = {}, players = {}, items = {},
+			money = 0, vendor = 0, repair = 0, alias = {}, char = char }
+	end
+	local mainRun = made({ name = "Ibona Hexfang", realm = nil, class = "WARLOCK" }, "Ragefireabgrund")
+	d.runs, d.currentRun, d.allChars = { mainRun }, nil, false
+	unitNames.player = "Tarosh"
+	local chatBefore = #chat
+	SlashCmdList.RUNRECAP("")
+	check("twink: /recap shows no foreign run, says so", not ns.Recap.IsShown() and #chat == chatBefore + 1
+		and chat[#chat]:find(ns.L.NO_RECAP_CHAR, 1, true) ~= nil, chat[#chat])
+	ns.MinimapButton.OnClick("LeftButton")
+	check("twink: minimap button neither", not ns.Recap.IsShown())
+	local lines = {}
+	ns.MinimapButton.Tooltip({ AddLine = function(_, t) lines[#lines + 1] = t end })
+	check("twink: tooltip says no run with this character", lines[2] == ns.L.MINIMAP_NONE_CHAR, lines[2])
+	local panel = ns.Options.Panel()
+	panel.AllChars:SetChecked(true)
+	panel.AllChars:GetScript("OnClick")(panel.AllChars)
+	check("option all characters (saved)", d.allChars == true)
+	for _, skin in ipairs({ "blizzard", "recap" }) do
+		d.skin = skin
+		pcall(ns.Recap.ApplySkin)
+		SlashCmdList.RUNRECAP("")
+		local sub = ns.Recap.IsShown() and ns.Recap.Frame().Sub:GetText() or ""
+		check("all characters, " .. skin .. ": main's run with his name in class colour", ns.Recap.Frame().run == mainRun
+			and sub:find("Ibona Hexfang", 1, true) ~= nil and sub:find("|c", 1, true) ~= nil, sub)
+		ns.Recap.Hide()
+	end
+	d.skin = "blizzard"
+	pcall(ns.Recap.ApplySkin)
+	panel.AllChars:SetChecked(false)
+	panel.AllChars:GetScript("OnClick")(panel.AllChars)
+	unitNames.player = "Ibona Hexfang"
+	SlashCmdList.RUNRECAP("")
+	local sub = ns.Recap.IsShown() and ns.Recap.Frame().Sub:GetText() or ""
+	check("main: own run, no name in the header", ns.Recap.Frame().run == mainRun and not sub:find("Ibona", 1, true), sub)
+	ns.Recap.Hide()
+	unitNames.player = "Tarosh"
+	local inside = { inInstance = true, instanceType = "party", mapID = 389, name = "Ragefireabgrund" }
+	local twinkRun = ns.Run.OnZone(inside)
+	twinkRun.completed = true
+	ns.Run.End("test")
+	SlashCmdList.RUNRECAP("")
+	check("twink after its own run: that one", ns.Recap.IsShown() and ns.Recap.Frame().run == twinkRun and twinkRun.char.name == "Tarosh")
+	ns.Recap.Hide()
+	unitNames.player = "Ibona Hexfang"
+	d.runs, d.currentRun, d.allChars = savedRuns, savedCurrent, savedAll
 end
 
 print(failures == 0 and "\nall smoke checks passed" or ("\n" .. failures .. " smoke checks failed"))

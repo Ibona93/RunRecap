@@ -46,9 +46,9 @@ Schwester-Addon: [BGF – Better Group Finder Forever](https://github.com/Ibona9
 | `/recap debug` | Debug-Ausgabe an/aus, zeigt Version, Client-Build, Interface-Nummer und den laufenden Run |
 | `/recap help` | Befehle auflisten |
 
-Minimap-Button: Linksklick öffnet die Übersicht des letzten Runs, Rechtsklick die Optionen; er lässt sich am Minimap-Rand verschieben und in den Optionen ausblenden. Minimap-Sammeladdons und Broker-Leisten (Titan Panel, ChocolateBar) erkennen ihn.
+Minimap-Button: Linksklick öffnet die Übersicht des letzten Runs (des Charakters, den du spielst; Option „Runs aller Charaktere anzeigen“ für alle), Rechtsklick die Optionen; er lässt sich am Minimap-Rand verschieben und in den Optionen ausblenden. Minimap-Sammeladdons und Broker-Leisten (Titan Panel, ChocolateBar) erkennen ihn.
 
-**Optionen:** automatisch öffnen (an/aus), auch grüne Items zeigen (Standard: ab Blau), Darstellung (Blizzard oder Run Recap), Erfolgssound (7 Sounds aus dem Spiel oder aus, mit Probehören), Vorschau.
+**Optionen:** automatisch öffnen (an/aus), auch grüne Items zeigen (Standard: ab Blau), Runs aller Charaktere anzeigen (Standard: nur der Charakter, den du spielst), Darstellung (Blizzard oder Run Recap), Erfolgssound (7 Sounds aus dem Spiel oder aus, mit Probehören), Vorschau.
 
 ## 4. Bekannte Einschränkungen
 
@@ -61,6 +61,10 @@ Minimap-Button: Linksklick öffnet die Übersicht des letzten Runs, Rechtsklick 
 Fehler und Ideen: [GitHub Issues](https://github.com/Ibona93/RunRecap/issues). Technische Hinweise und Tests: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) (Englisch).
 
 ## 6. Changelog
+
+### 1.0.2 (25.11.2026)
+- Runs pro Charakter: `/recap` und der Minimap-Button zeigen den letzten Run des Charakters, den du gerade spielst – auf dem Twink nicht mehr den Run deines Mains. Runs von vor 1.0.2 werden bei jedem Charakter gezeigt. Gespeichert werden die letzten 20 Runs pro Charakter.
+- Neue Option „Runs aller Charaktere anzeigen“ (Standard aus): zeigt wie bisher den letzten Run des Accounts, mit dem Namen des Charakters in der Übersicht.
 
 ### 1.0.1 (25.11.2026)
 - Behoben: Würfe auf Items, deren Name die Wörter der Würfelzeile enthält (z. B. „[Mantel von Doan]“), landeten unter falschen Spielernamen – bei „Tode“ standen dann ausgedachte Spieler. Gespeicherte Runs mit diesem Fehler werden automatisch repariert.

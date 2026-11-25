@@ -12,7 +12,7 @@ read_globals = {
 	"GameFontHighlightSmall", "GameFontNormal", "STANDARD_TEXT_FONT", "unpack",
 	"GetInstanceInfo", "GetNumLootItems", "GetLootSlotLink", "GetLootSourceInfo", "CombatLogGetCurrentEventInfo",
 	"PlaySound", "GetTime", "date", "strsplit", "time",
-	"UnitName", "UnitClass", "UnitExists", "UnitGUID", "UnitIsDeadOrGhost", "UnitIsDead", "UNKNOWNOBJECT", "UNKNOWN", "GetInventoryItemID", "UnitIsFeignDeath", "GetPlayerInfoByGUID",
+	"UnitName", "UnitClass", "GetRealmName", "UnitExists", "UnitGUID", "UnitIsDeadOrGhost", "UnitIsDead", "UNKNOWNOBJECT", "UNKNOWN", "GetInventoryItemID", "UnitIsFeignDeath", "GetPlayerInfoByGUID",
 	"GetLootRollItemLink", "GetItemInfo", "GetItemIcon", "C_Item", "ITEM_QUALITY_COLORS", "RAID_CLASS_COLORS",
 	"CreateColor", "Settings", "LibStub", "SetPortraitToTexture", "C_TooltipInfo", "ChatEdit_InsertLink",
 }

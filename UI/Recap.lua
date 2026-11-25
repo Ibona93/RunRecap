@@ -566,7 +566,12 @@ function Recap.Render()
 	frame.Dungeon:SetText(run.name or "")
 	local when = date and run.date and date(l.DATE_FORMAT, run.date) or ""
 	local state = run.completed and l.COMPLETED or l.IN_PROGRESS
-	frame.Sub:SetText(("%s · %s%s"):format(state, ns.Parse.Clock(s.duration), when ~= "" and (" · " .. when) or ""))
+	-- 1.0.2: the character, if runs of all characters are shown or the run is someone else's
+	local who = ""
+	if run.char and run.char.name and ((ns.db and ns.db.allChars) or ns.Run.IsForeign(run, ns.Run.MyChar())) then
+		who = " · " .. W.ColorName(run.char.name, run.char.class)
+	end
+	frame.Sub:SetText(("%s · %s%s%s"):format(state, ns.Parse.Clock(s.duration), when ~= "" and (" · " .. when) or "", who))
 
 	local y = 0
 	for _, entry in ipairs(s.bosses) do

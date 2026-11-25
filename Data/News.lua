@@ -16,7 +16,7 @@ local ICON = {
 }
 ns.NEWS_ICON = ICON
 
-ns.NEWS_ORDER = { "1.0.1", "1.0.0" }
+ns.NEWS_ORDER = { "1.0.2", "1.0.1", "1.0.0" }
 ns.NEWS_FIRST = "1.0.0"   -- welcome page for new users
 
 ns.NEWS_UI = {
@@ -35,6 +35,22 @@ ns.NEWS_UI = {
 }
 
 ns.NEWS = {
+	["1.0.2"] = {
+		enUS = { title = "Run Recap 1.0.2", items = {
+			{ icon = ICON.chest, title = "Your runs per character",
+				text = "/recap and the minimap button now show the last run of the character you are playing – your alts no longer see your main's runs. Runs from before this update are shown for every character." },
+			{ icon = ICON.gear, title = "Runs of all characters",
+				text = "Prefer it the old way? Options → \"Show runs of all characters\". The recap then shows whose run it is.",
+				tip = "Options: right-click the minimap button" },
+		} },
+		deDE = { title = "Run Recap 1.0.2", items = {
+			{ icon = ICON.chest, title = "Deine Runs pro Charakter",
+				text = "/recap und der Minimap-Button zeigen jetzt den letzten Run des Charakters, den du gerade spielst – deine Twinks sehen nicht mehr die Runs deines Mains. Runs von vor diesem Update werden bei jedem Charakter gezeigt." },
+			{ icon = ICON.gear, title = "Runs aller Charaktere",
+				text = "Lieber wie vorher? Optionen → „Runs aller Charaktere anzeigen“. Die Übersicht zeigt dann, von wem der Run ist.",
+				tip = "Optionen: Rechtsklick auf den Minimap-Button" },
+		} },
+	},
 	["1.0.1"] = {
 		enUS = { title = "Run Recap 1.0.1", items = {
 			{ icon = ICON.dice, title = "Rolls under the right names",

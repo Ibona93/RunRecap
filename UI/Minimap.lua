@@ -1,5 +1,6 @@
 --[[
-Minimap button (Felix, 23.11.2026): left-click opens/closes the recap of the last run,
+Minimap button (Felix, 23.11.2026): left-click opens/closes the recap of the last run (of this
+character since 1.0.2, see Run.Latest),
 right-click the options. Built with LibDataBroker + LibDBIcon (in Libs/), so minimap button
 collectors and broker bars (Titan Panel, ChocolateBar) pick it up. Position and visibility
 are saved in RunRecapDB.minimap.
@@ -25,7 +26,7 @@ function MinimapButton.OnClick(button)
 	if run and ns.Recap then
 		ns.Recap.Toggle(run)
 	else
-		ns.Print(ns.L.NO_RECAP_YET)
+		ns.Print(ns.NoRecapText())
 	end
 end
 
@@ -37,7 +38,7 @@ function MinimapButton.Tooltip(tt)
 		local duration = run.completedAt or ns.Run.Elapsed(run)
 		tt:AddLine(L.MINIMAP_LAST:format(run.name or "?", ns.Parse.Clock(duration)), 0.6, 0.6, 0.6)
 	else
-		tt:AddLine(L.MINIMAP_NONE, 0.6, 0.6, 0.6)
+		tt:AddLine(ns.NoRecapText(true), 0.6, 0.6, 0.6)
 	end
 	tt:AddLine(" ")
 	tt:AddLine(L.MINIMAP_LEFT, 0.1, 1, 0.1)
