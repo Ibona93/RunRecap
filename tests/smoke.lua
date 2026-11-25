@@ -733,5 +733,64 @@ do
 	d.runs, d.currentRun, d.allChars = savedRuns, savedCurrent, savedAll
 end
 
+print("New group and reset through the events (1.0.2)")
+do
+	local d = ns.db
+	local savedRuns, savedCurrent, savedNames = d.runs, d.currentRun, unitNames
+	d.runs, d.currentRun = {}, nil
+	local WC = function() return "Die Höhlen des Wehklagens", "party", 1, "Normal", 5, 0, false, 43 end
+	local OUT = function() return "Brachland", "none", 0, "", 0, 0, false, 1 end
+	unitNames = { player = "Ibona", party1 = "Anna", party2 = "Bert", party3 = "Carl", party4 = "Dora" }
+	_G.GetInstanceInfo = WC
+	ok, err = pcall(fire, "PLAYER_ENTERING_WORLD", false, false)
+	local run = d.currentRun
+	check("group enters: run with all five", ok and run and run.players.Anna and run.players.Dora, err)
+	run.wipes = 3
+	unitNames.party4 = "Emil"
+	pcall(fire, "GROUP_ROSTER_UPDATE")
+	check("one substitute inside: same run, substitute recorded", d.currentRun == run and run.players.Emil ~= nil)
+	unitNames.party1, unitNames.party2, unitNames.party3 = "Finn", "Gina", "Hans"
+	pcall(fire, "GROUP_ROSTER_UPDATE")
+	local fresh = d.currentRun
+	check("three newcomers in one update: new run with the new group", fresh ~= run and fresh.mapID == 43
+		and fresh.players.Finn and fresh.players.Emil and not fresh.players.Anna and fresh.wipes == 0 and #d.runs == 0)
+
+	-- leave alive, group falls apart outside, a new group (one old friend) enters
+	_G.GetInstanceInfo = OUT
+	pcall(fire, "ZONE_CHANGED_NEW_AREA")
+	check("outside: paused", fresh.state == "paused")
+	unitNames = { player = "Ibona", party1 = "Finn", party2 = "Ivo", party3 = "Jan", party4 = "Kai" }
+	pcall(fire, "GROUP_ROSTER_UPDATE")
+	check("outside: new members are not recorded", fresh.players.Ivo == nil)
+	_G.GetInstanceInfo = WC
+	pcall(fire, "ZONE_CHANGED_NEW_AREA")
+	local third = d.currentRun
+	check("friend + 3 strangers enter: new run", third ~= fresh and fresh.endReason == "new group" and third.players.Ivo
+		and third.players.Finn)
+	-- same group out and in again: same run
+	_G.GetInstanceInfo = OUT
+	pcall(fire, "ZONE_CHANGED_NEW_AREA")
+	_G.GetInstanceInfo = WC
+	pcall(fire, "ZONE_CHANGED_NEW_AREA")
+	check("same group back in: same run", d.currentRun == third and third.state == "active")
+
+	-- dying, ghost outside, the leader resets: the run is over
+	deadUnits.player = true
+	_G.GetInstanceInfo = OUT
+	pcall(fire, "ZONE_CHANGED_NEW_AREA")
+	check("ghost outside: run still active", third.state == "active")
+	ok, err = pcall(fire, "CHAT_MSG_SYSTEM", "Die Höhlen des Wehklagens wurde zurückgesetzt.")
+	check("reset while a ghost outside: run over", ok and d.currentRun == nil and third.endReason == "reset", err)
+	deadUnits.player = nil
+	_G.GetInstanceInfo = WC
+	pcall(fire, "ZONE_CHANGED_NEW_AREA")
+	local inRun = d.currentRun
+	pcall(fire, "CHAT_MSG_SYSTEM", "Die Höhlen des Wehklagens wurde zurückgesetzt.")
+	check("reset message inside: run goes on", d.currentRun == inRun and inRun ~= third)
+	unitNames = savedNames
+	d.runs, d.currentRun = savedRuns, savedCurrent
+	_G.GetInstanceInfo = function() return "The Deadmines", "party", 1, "Normal", 5, 0, false, 36 end
+end
+
 print(failures == 0 and "\nall smoke checks passed" or ("\n" .. failures .. " smoke checks failed"))
 os.exit(failures == 0 and 0 or 1)

@@ -761,5 +761,121 @@ do
 	_G.UnitName, _G.UnitClass, _G.GetRealmName, _G.RunRecapDB = nil, nil, nil, nil
 end
 
+print("New group = new run (1.0.2)")
+do
+	local R = ns.Run
+	_G.UnitName = function(u) if u == "player" then return "Ibona" end end
+	_G.GetRealmName = function() return "Forever" end
+	_G.RunRecapDB = nil
+	ns.InitDB()
+	local d = ns.db
+	local inside = { inInstance = true, instanceType = "party", mapID = 43, name = "Die Höhlen des Wehklagens" }
+	local outside = { inInstance = false, dead = false }
+	local function start(players)
+		d.currentRun = nil
+		local run = R.OnZone(inside, 1000)
+		R.SetPlayer(run, "Ibona Hexfang", "WARLOCK")
+		for _, n in ipairs(players) do R.SetPlayer(run, n, "WARRIOR") end
+		return run
+	end
+	local function add(run, names) for _, n in ipairs(names) do R.SetPlayer(run, n, "MAGE") end end
+	local group = { "Anna", "Bert", "Carl", "Dora" }
+
+	local run = start(group)
+	check("same group: goes on", R.SameGroup(run, group))
+	check("my own name is never one of the others", R.SameGroup(run, { "Ibona", "Anna", "Bert", "Carl" }))
+	check("one substitute: 3 of 4, goes on", R.SameGroup(run, { "Anna", "Bert", "Carl", "Emil" }))
+	check("two substitutes at once: 2 of 4, goes on", R.SameGroup(run, { "Anna", "Bert", "Emil", "Finn" }))
+	check("three at once: 1 of 4, new run", not R.SameGroup(run, { "Anna", "Emil", "Finn", "Gina" }))
+	check("placeholders are ignored", R.SameGroup(run, { "Anna", "Unbekannt", UNKNOWNOBJECT or "Unknown" }))
+	check("alone: no check", R.SameGroup(run, {}))
+	check("first name matches the recorded full name", (function()
+		local r = start({ "Anna Kramer", "Bert Bauer", "Carl Cox", "Dora Dahl" })
+		return R.SameGroup(r, { "Anna", "Bert", "Carl", "Emil" }) and not R.SameGroup(r, { "Anna", "Emil", "Finn", "Gina" })
+	end)())
+	check("full name matches a recorded first name", R.SameGroup(start(group), { "Anna Kramer", "Bert Bauer", "Emil", "Finn" }))
+	check("run without other players: no check", (function()
+		d.currentRun = nil
+		local r = R.OnZone(inside, 1000)
+		R.SetPlayer(r, "Ibona", "WARLOCK")
+		return R.SameGroup(r, { "Emil", "Finn", "Gina", "Hans" })
+	end)())
+	check("duo: 1 of 1, goes on", R.SameGroup(start({ "Anna" }), { "Anna" }))
+
+	-- 5 players, three swaps 10 minutes apart: each newcomer counts as known from joining on
+	run = start(group)
+	local swaps = { { "Anna", "Bert", "Carl", "Emil" }, { "Bert", "Carl", "Emil", "Finn" }, { "Carl", "Emil", "Finn", "Gina" } }
+	local oneRun = true
+	for _, g in ipairs(swaps) do
+		if not R.SameGroup(run, g) then oneRun = false end
+		add(run, g)
+	end
+	check("three swaps one after another: one run all along", oneRun and d.currentRun == run)
+	check("a player who left and comes back is known", R.SameGroup(run, { "Dora", "Emil", "Finn", "Gina" }))
+
+	-- re-entering: friend + 3 strangers -> new run; the old one (not completed) is dropped
+	d.runs = {}
+	run = start(group)
+	run.wipes = 3
+	R.OnZone(outside, 1500)
+	local fresh = R.OnZone({ inInstance = true, instanceType = "party", mapID = 43, name = "Die Höhlen des Wehklagens",
+		group = { "Anna", "Emil", "Finn", "Gina" } }, 1600)
+	check("back in with a friend + 3 strangers: new run", fresh ~= run and d.currentRun == fresh and run.endReason == "new group"
+		and (fresh.wipes or 0) == 0 and fresh.startedAt == 1600)
+	check("the old run (not completed) is dropped", #d.runs == 0)
+	-- completed run, then a new group: the old one goes to the history
+	run = start(group)
+	run.completed = true
+	R.OnZone(outside, 1500)
+	-- (completed + paused + back in = "again" anyway; inside the roster check decides)
+	d.currentRun.state = "active"
+	R.OnZone(inside, 1550)
+	check("completed run, new group inside: kept in the history", (function()
+		if R.SameGroup(run, { "Emil", "Finn", "Gina", "Hans" }) then return false end
+		R.End("new group")
+		return d.runs[#d.runs] == run
+	end)())
+	-- re-entering with the same group / a substitute: same run
+	run = start(group)
+	R.OnZone(outside, 1500)
+	local same = R.OnZone({ inInstance = true, instanceType = "party", mapID = 43, group = { "Anna", "Bert", "Carl", "Dora" } }, 1600)
+	check("back in with the same group: same run", same == run and run.state == "active")
+	R.OnZone(outside, 1700)
+	same = R.OnZone({ inInstance = true, instanceType = "party", mapID = 43, group = { "Anna", "Bert", "Carl", "Emil" } }, 1800)
+	check("back in with one substitute: same run", same == run)
+	R.OnZone(outside, 1900)
+	same = R.OnZone({ inInstance = true, instanceType = "party", mapID = 43, group = {} }, 2000)
+	check("back in alone (names not known yet): same run", same == run)
+	R.End("test")
+	_G.UnitName, _G.GetRealmName, _G.RunRecapDB = nil, nil, nil
+end
+
+print("Instance reset ends a run outside (1.0.2)")
+do
+	local R = ns.Run
+	_G.RunRecapDB = nil
+	ns.InitDB()
+	local d = ns.db
+	local inside = { inInstance = true, instanceType = "party", mapID = 389, name = "Ragefireabgrund" }
+	local run = R.OnZone(inside, 1000)
+	R.OnZone({ inInstance = false, dead = false }, 1100)
+	R.OnInstanceReset(false)
+	check("paused run + reset: over", d.currentRun == nil and run.endReason == "reset")
+	run = R.OnZone(inside, 2000)
+	R.OnZone({ inInstance = false, dead = true }, 2100)
+	check("ghost outside: run still active", run.state == "active")
+	R.OnInstanceReset(false)
+	check("active run outside (ghost) + reset: over, dropped", d.currentRun == nil and run.endReason == "reset" and #d.runs == 0)
+	local again = R.OnZone(inside, 2200)
+	check("next visit starts a new run", again ~= run and again.startedAt == 2200)
+	R.OnInstanceReset(true)
+	check("active run inside + reset message: goes on", d.currentRun == again and again.state == "active")
+	again.completed = true
+	R.OnZone({ inInstance = false, dead = true }, 2300)
+	R.OnInstanceReset(false)
+	check("completed run + reset: in the history", d.runs[#d.runs] == again and d.currentRun == nil)
+	_G.RunRecapDB = nil
+end
+
 print(("\n%d passed, %d failed"):format(passed, failed))
 os.exit(failed == 0 and 0 or 1)

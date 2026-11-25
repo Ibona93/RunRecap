@@ -65,6 +65,8 @@ Bug reports and ideas: [GitHub Issues](https://github.com/Ibona93/RunRecap/issue
 ### 1.0.2 (25.11.2026)
 - Runs per character: `/recap` and the minimap button show the last run of the character you are playing, no longer your main's run on an alt. Runs from before 1.0.2 are shown for every character. The last 20 runs are kept per character.
 - New option "Show runs of all characters" (off by default): shows the account's last run as before, with the character's name in the recap.
+- New group, new run: going back into a dungeon with a different group, or most of the group changing at once inside, starts a new run (the run goes on while at least half of the others were in it). Single substitutes keep the run going. Before, both groups ended up in one recap.
+- An instance reset now also ends a run while you are outside as a ghost; the next visit starts a new run.
 
 ### 1.0.1 (25.11.2026)
 - Fixed: rolls on items whose name contains the roll line's own words (in German e.g. "[Mantel von Doan]") were stored under wrong player names – the run facts then listed made-up players under "Deaths". Runs saved with this error are repaired automatically.

@@ -58,8 +58,9 @@ The file is written on logout or `/reload`: `_forever_/WTF/Account/<ACCOUNT>/Sav
 | completed | `ns.Dungeons.WingProgress` of the boss's wing; the run keeps recording afterwards (end boss loot is rolled later) |
 | leave as ghost | run keeps going (`UnitIsDeadOrGhost("player")`) |
 | leave alive | paused, pause time not counted; alive again outside after a ghost run = pause too |
-| end | other instance, `INSTANCE_RESET_SUCCESS` while paused, 30 min paused, login ≥ 30 min after last activity; back in the same dungeon after a completed run (left alive) starts a new run. (The creature-GUID copy check was removed on 23.11.2026: it restarted a run in the middle of Dalaran.) |
+| end | other instance, `INSTANCE_RESET_SUCCESS` while outside (paused, or active as a ghost; 1.0.2) – inside it is ignored, 30 min paused, login ≥ 30 min after last activity; back in the same dungeon after a completed run (left alive) starts a new run. (The creature-GUID copy check was removed on 23.11.2026: it restarted a run in the middle of Dalaran.) |
 | history | completed runs → `RunRecapDB.runs` (last 20 per character, `run.char` = name/realm/class; untagged pre-1.0.2 runs count as one group); aborted runs are dropped |
+| group (1.0.2) | `Run.SameGroup`, majority rule: others = group without me, known = those of them already in `run.players`; the run goes on while known × 2 ≥ others, otherwise `Run.End("new group")` + new run. Checked when entering the run's dungeon (`info.group` in `Run.OnZone`) and on roster updates inside it (before new names are recorded; all newcomers of one update together). Outside the roster is not recorded. No check when alone or the run had nobody else. First/full names match by prefix |
 | characters (1.0.2) | `Run.Latest` (recap, `/recap`, minimap) = last run of the logged-in character plus untagged old runs; `RunRecapDB.allChars` = account-wide. Another character's run in progress is not `Run.Current()`: paused outside, ended when this character enters an instance |
 
 Names: Forever's unit functions give the first name, chat lines the full name; a first name with exactly one matching full name is merged into it (`run.alias`).
@@ -109,6 +110,8 @@ Offline tests can't replace the game. Before testing, enter `/console taintLog 1
 | 13 | Taint log after the dungeon | no lines with RunRecap |
 | 14 | Minimap button: left-click, right-click, drag, hide in the options, tooltip | recap of the last run; options (after combat if in combat); position kept after /reload; hidden after /reload |
 | 15 | Runs per character (1.0.2): main with a run, log in an alt; alt does a run; option "all characters" on/off | alt: "no run with this character yet" (chat + minimap tooltip); then its own run; option on: account's newest run with the name in the header; main again: his run |
+| 16 | New group (1.0.2): with a group in a dungeon, leave alive, leave the group, enter with a different group (or one old friend + 3 strangers); counter-check: same group / one LFG substitute | new group: recap shows only the new group, wipes and time start at 0; same group or one substitute: same run |
+| 17 | Reset as a ghost (1.0.2): die, run out as a ghost, the leader resets | next visit starts an empty run (group members get the message too) |
 
 ## Files
 

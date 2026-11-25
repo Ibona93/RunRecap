@@ -19,6 +19,14 @@ The run: one visit to a dungeon instance, from entering it until it ends.
     characters" (RunRecapDB.allChars) shows the account's last run as before. A run in
     progress of another character is left alone (paused) until this character enters an
     instance - then it is over, a run never continues on another character.
+  * 1.0.2: a run belongs to its group (Felix 25.11.2026, majority rule, Run.SameGroup). When
+    entering the dungeon again and on roster changes inside it: "others" = the group without
+    me, "known" = those of them who were in the run at some point. The run goes on while
+    known * 2 >= others; otherwise it ends ("new group") and a new run starts. No check when
+    alone or when the run had nobody else. Outside the dungeon the roster is not recorded, so
+    a new group formed outside is checked when entering.
+  * 1.0.2: "instances have been reset" ends a paused run and an active one while outside (a
+    ghost running back); inside nothing happens.
 
 Loot -> source (no shipped loot tables):
   1. own loot window: GetLootSourceInfo -> NPC -> boss (from the data or learned), otherwise
@@ -238,6 +246,11 @@ function Run.OnZone(info, now)
 				Run.End("again")
 				return Run.New(info.mapID, info.name or (dungeon and dungeon.name), now)
 			end
+			if info.group and not Run.SameGroup(run, info.group) then
+				-- back in with (mostly) other people: their run, not this one (1.0.2)
+				Run.End("new group")
+				return Run.New(info.mapID, info.name or (dungeon and dungeon.name), now)
+			end
 			Run.Resume(run, now)
 			return run
 		end
@@ -289,10 +302,12 @@ function Run.OnAliveOutside(now)
 	if run and run.state == "active" then Run.Pause(run, now) end
 end
 
--- "<instance> has been reset": a paused run is over.
-function Run.OnInstanceReset()
+-- "<instance> has been reset": a run outside is over - paused, or active while running back as
+-- a ghost (1.0.2). Inside an instance nothing happens (nobody can reset from there).
+function Run.OnInstanceReset(inInstance)
+	if inInstance then return end
 	local run = Run.Current()
-	if run and run.state == "paused" then Run.End("reset") end
+	if run and (run.state == "paused" or run.state == "active") then Run.End("reset") end
 end
 
 
@@ -495,6 +510,49 @@ function Run.SetGroup(run, names)
 	for _, name in ipairs(names or {}) do
 		if not Run.IsPlaceholder(name) then run.group[name] = true end
 	end
+end
+
+--[[
+Group check (1.0.2, majority rule, Felix 25.11.2026). names = the current group without me
+(party units; my own name is skipped as well). The run goes on while at least half of the
+others were in the run at some point (run.players - also substitutes who joined later).
+First and full names match ("Anna" = "Anna Kramer"), placeholders are ignored. No check when
+there are no others or the run never had anybody else.
+]]
+local function sameName(a, b)
+	if a == b then return true end
+	return a:sub(1, #b + 1) == b .. " " or b:sub(1, #a + 1) == a .. " "
+end
+
+function Run.SameGroup(run, names)
+	if not run or type(names) ~= "table" then return true end
+	local me = Run.MyChar()
+	me = me and me.name
+	local function isMe(n) return me ~= nil and sameName(n, me) end
+	local before = false
+	for p in pairs(run.players or {}) do
+		if type(p) == "string" and not isMe(p) then before = true break end
+	end
+	if not before then return true end
+	local seen, others, known = {}, 0, 0
+	for _, raw in ipairs(names) do
+		if not Run.IsPlaceholder(raw) then
+			local name = Run.Canon(run, raw)
+			if not isMe(name) and not seen[name] then
+				seen[name] = true
+				others = others + 1
+				local hit = run.players[name] ~= nil
+				if not hit then
+					for p in pairs(run.players) do
+						if type(p) == "string" and not isMe(p) and sameName(p, name) then hit = true break end
+					end
+				end
+				if hit then known = known + 1 end
+			end
+		end
+	end
+	if others == 0 then return true end
+	return known * 2 >= others
 end
 
 --[[

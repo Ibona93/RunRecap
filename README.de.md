@@ -65,6 +65,8 @@ Fehler und Ideen: [GitHub Issues](https://github.com/Ibona93/RunRecap/issues). T
 ### 1.0.2 (25.11.2026)
 - Runs pro Charakter: `/recap` und der Minimap-Button zeigen den letzten Run des Charakters, den du gerade spielst – auf dem Twink nicht mehr den Run deines Mains. Runs von vor 1.0.2 werden bei jedem Charakter gezeigt. Gespeichert werden die letzten 20 Runs pro Charakter.
 - Neue Option „Runs aller Charaktere anzeigen“ (Standard aus): zeigt wie bisher den letzten Run des Accounts, mit dem Namen des Charakters in der Übersicht.
+- Neue Gruppe, neuer Run: Wer mit einer anderen Gruppe wieder in einen Dungeon geht oder drinnen den Großteil der Gruppe auf einmal tauscht, bekommt einen neuen Run (der Run läuft weiter, solange mindestens die Hälfte der anderen schon dabei war). Einzelne Ersatzspieler ändern nichts. Vorher landeten beide Gruppen in einer Übersicht.
+- Ein Instanz-Reset beendet jetzt auch einen Run, während du als Geist draußen bist; der nächste Besuch beginnt neu.
 
 ### 1.0.1 (25.11.2026)
 - Behoben: Würfe auf Items, deren Name die Wörter der Würfelzeile enthält (z. B. „[Mantel von Doan]“), landeten unter falschen Spielernamen – bei „Tode“ standen dann ausgedachte Spieler. Gespeicherte Runs mit diesem Fehler werden automatisch repariert.

@@ -154,17 +154,57 @@ local function zoneInfo()
 	return info
 end
 
+local GROUP_UNITS = { "player", "party1", "party2", "party3", "party4" }
+
+-- The group: { { name, class, unit } ... } (placeholders skipped).
+local function roster()
+	local list = {}
+	if not UnitName then return list end
+	for _, unit in ipairs(GROUP_UNITS) do
+		local name = ns.Plain(UnitName(unit))
+		if not ns.Run.IsPlaceholder(name) and (not UnitExists or UnitExists(unit)) then
+			local class = UnitClass and ns.Plain(select(2, UnitClass(unit)))
+			list[#list + 1] = { name = name, class = class, unit = unit }
+		end
+	end
+	return list
+end
+
+-- Names of the others in the group (without the player) for the group check (1.0.2).
+local function otherNames(list)
+	local names = {}
+	for _, m in ipairs(list or roster()) do
+		if m.unit ~= "player" then names[#names + 1] = m.name end
+	end
+	return names
+end
+
+local function zoneWithGroup()
+	local info = zoneInfo()
+	if info.inInstance then info.group = otherNames() end
+	return info
+end
+
+--[[
+Roster: recorded only inside the run's dungeon (1.0.2). A group change there is checked first
+(majority rule, Run.SameGroup) - before the new names land in run.players, all newcomers of
+one update together. Outside nothing is recorded; entering checks the group (Run.OnZone).
+]]
 local function updateRoster()
 	local run = ns.Run.Current()
 	if not run or not UnitName then return end
+	local info = zoneInfo()
+	if not (info.inInstance and info.mapID == run.mapID) then return end
+	local list = roster()
+	if not ns.Run.SameGroup(run, otherNames(list)) then
+		ns.Run.End("new group")
+		run = ns.Run.OnZone(info)
+		if not run then return end
+	end
 	local group = {}
-	for _, unit in ipairs({ "player", "party1", "party2", "party3", "party4" }) do
-		local name = ns.Plain(UnitName(unit))
-		if not ns.Run.IsPlaceholder(name) and (not UnitExists or UnitExists(unit)) then
-			local class = UnitClass and select(2, UnitClass(unit))
-			ns.Run.SetPlayer(run, name, class)
-			group[#group + 1] = name
-		end
+	for _, m in ipairs(list) do
+		ns.Run.SetPlayer(run, m.name, m.class)
+		group[#group + 1] = m.name
 	end
 	ns.Run.SetGroup(run, group)
 end
@@ -251,13 +291,13 @@ end
 
 function handlers.PLAYER_ENTERING_WORLD(isLogin, isReload)
 	if isLogin or isReload then ns.Run.OnLogin() end
-	ns.Run.OnZone(zoneInfo())
+	ns.Run.OnZone(zoneWithGroup())
 	updateRoster()
 	sampleRepair()
 end
 
 function handlers.ZONE_CHANGED_NEW_AREA()
-	ns.Run.OnZone(zoneInfo())
+	ns.Run.OnZone(zoneWithGroup())
 	updateRoster()
 	sampleRepair()
 end
@@ -291,7 +331,7 @@ end
 
 function handlers.CHAT_MSG_SYSTEM(msg)
 	if _G.INSTANCE_RESET_SUCCESS and ns.Parse.Match(_G.INSTANCE_RESET_SUCCESS, msg) then
-		ns.Run.OnInstanceReset()
+		ns.Run.OnInstanceReset(zoneInfo().inInstance)
 	end
 end
 

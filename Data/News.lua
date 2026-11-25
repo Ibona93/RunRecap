@@ -13,6 +13,7 @@ local ICON = {
 	dice = "Interface\\Icons\\INV_Misc_Coin_01",
 	watch = "Interface\\Icons\\INV_Misc_PocketWatch_01",
 	gear = "Interface\\Icons\\INV_Misc_Gear_01",
+	group = "Interface\\Icons\\INV_Misc_GroupLooking",
 }
 ns.NEWS_ICON = ICON
 
@@ -42,6 +43,8 @@ ns.NEWS = {
 			{ icon = ICON.gear, title = "Runs of all characters",
 				text = "Prefer it the old way? Options → \"Show runs of all characters\". The recap then shows whose run it is.",
 				tip = "Options: right-click the minimap button" },
+			{ icon = ICON.group, title = "New group, new run",
+				text = "If you go back into a dungeon with a different group – or most of your group changes at once – a new run starts. Single substitutes keep the run going. After an instance reset the next visit starts fresh, even if you were running back as a ghost." },
 		} },
 		deDE = { title = "Run Recap 1.0.2", items = {
 			{ icon = ICON.chest, title = "Deine Runs pro Charakter",
@@ -49,6 +52,8 @@ ns.NEWS = {
 			{ icon = ICON.gear, title = "Runs aller Charaktere",
 				text = "Lieber wie vorher? Optionen → „Runs aller Charaktere anzeigen“. Die Übersicht zeigt dann, von wem der Run ist.",
 				tip = "Optionen: Rechtsklick auf den Minimap-Button" },
+			{ icon = ICON.group, title = "Neue Gruppe, neuer Run",
+				text = "Gehst du mit einer anderen Gruppe wieder in einen Dungeon – oder wechselt der Großteil deiner Gruppe auf einmal –, beginnt ein neuer Run. Einzelne Ersatzspieler ändern nichts. Nach einem Instanz-Reset beginnt der nächste Besuch neu, auch wenn du gerade als Geist zurückgelaufen bist." },
 		} },
 	},
 	["1.0.1"] = {
