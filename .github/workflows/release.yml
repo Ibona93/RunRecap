@@ -161,6 +161,11 @@ jobs:
             if [ "$rtype" = "release" ]; then
               if gh release view "v$version" >/dev/null 2>&1; then
                 echo "v$version exists on GitHub"
+              elif ! git diff --quiet "$sha" HEAD -- .github/workflows; then
+                # The built-in token may not create a tag whose workflow files differ from
+                # the current branch (that would need the "workflows" permission) -> 403.
+                echo "::error::.github/workflows changed after $sha - GitHub refuses the tag (403). Create v$version by hand."
+                ghFailed=1
               else
                 if ! gh release create "v$version" "$zip" --target "$sha" \
                   --title "Run Recap v$version" --notes-file "$notes"; then
