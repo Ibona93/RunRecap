@@ -62,6 +62,10 @@ Fehler und Ideen: [GitHub Issues](https://github.com/Ibona93/RunRecap/issues). T
 
 ## 6. Changelog
 
+### 1.0.1 (25.11.2026)
+- Behoben: Würfe auf Items, deren Name die Wörter der Würfelzeile enthält (z. B. „[Mantel von Doan]“), landeten unter falschen Spielernamen – bei „Tode“ standen dann ausgedachte Spieler. Gespeicherte Runs mit diesem Fehler werden automatisch repariert.
+- „Tode“ zeigt höchstens 5 Spieler, der Rest als „+N weitere“ (Maus drüber zeigt alle). Die Fakten zum Run laufen nicht mehr in die Highlights.
+
 ### 1.0.0 (24.11.2026)
 - Erste Version: Übersicht nach dem Endboss mit Bossen (Minute im Run, Kampfdauer, Endboss), Beute pro Boss mit Plünderer in Klassenfarbe, Abschnitt „Trash“ und Fakten zum Run (Dauer, Bosse, Wipes, dein Gold, Händlerwert deiner Beute, Reparaturkosten und Bilanz, Tode, Highlights).
 - Erfolgsmoment: Sound und Banner „Dungeon erfolgreich beendet!“, danach die Übersicht.

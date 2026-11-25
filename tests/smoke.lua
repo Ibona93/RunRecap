@@ -468,8 +468,8 @@ do
 	ok, err = pcall(fire, "PLAYER_ENTERING_WORLD", false, true)
 	local news = _G.RunRecapWhatsNew
 	check("after an update the news window opens once", ok and news and news:IsShown() and ns.db.lastSeenVersion == ns.VERSION, err)
-	check("news: page of the newest version (welcome page 1.0.0)", ns.WhatsNew.Frame().version == "1.0.0"
-		and news.Title.__text == "Willkommen bei Run Recap")
+	check("news: page of the newest version (1.0.1)", ns.WhatsNew.Frame().version == "1.0.1"
+		and news.Title.__text == "Run Recap 1.0.1")
 	news:Hide()
 	pcall(fire, "PLAYER_ENTERING_WORLD", false, true)
 	check("not again at the next /reload", not news:IsShown())
@@ -598,6 +598,39 @@ do
 		and lines[3]:find(ns.L.FINAL_BOSS, 1, true) ~= nil and lines[1] == "Befrager Vishas|", err or table.concat(lines, " / "))
 	local s = ns.Run.Summary(run, false)
 	check("rare not counted in bosses x/y", s.done == 2 and s.total == 2, tostring(s.done) .. "/" .. tostring(s.total))
+	ns.Recap.Hide()
+end
+
+print("Deaths list limited (1.0.1)")
+do
+	local now = ns.Now()
+	local players, deaths = {}, {}
+	for k = 1, 10 do players["Spieler " .. k] = false end
+	deaths["Spieler 1"], deaths["Spieler 2"] = 3, 1
+	local run = { id = 10, mapID = 189, name = "Scharlachrotes Kloster", date = now, startedAt = now - 900, pausedTotal = 0,
+		state = "paused", completed = true, completedAt = 812, kills = {}, killed = {}, wings = {}, completedWings = {},
+		wipes = 0, bossWipes = {}, bossDeaths = {}, deaths = deaths, deadNow = {}, players = players,
+		items = {}, money = 0, vendor = 0, repair = 0, alias = {}, loot = {} }
+	local ok, err = pcall(ns.Recap.Show, run)
+	local lines = ok and ns.Recap.FactLines() or {}
+	local named = 0
+	for _, line in ipairs(lines) do if line:find("Spieler", 1, true) then named = named + 1 end end
+	local all = table.concat(lines, "\n")
+	check("10 players: 5 rows, most deaths first, then '+5 weitere'", ok and named == 5
+		and all:find("Spieler 1|r|3", 1, true) and all:find("+5 weitere|", 1, true) ~= nil, err or all)
+	local f = ns.Recap.Frame()
+	local factsH, hlH = rawget(f.Facts, "__h") or 0, rawget(f.Highlights, "__h") or 0
+	check("facts and highlights never overlap", factsH > 0 and hlH >= 166 and factsH + 6 + hlH <= 604 - 76 - 42 + 0.5,
+		factsH .. " + " .. hlH)
+	local more = f.Facts.More
+	check("'+N more' row has a tooltip with all 10 players", more:IsShown() and #more.list == 10)
+	tip.lines = {}
+	ok, err = pcall(more.__scripts.OnEnter, more)
+	check("tooltip lists every player", ok and tipHas("Spieler 10"), err)
+	run.players = { ["Spieler 1"] = false, ["Spieler 2"] = false, ["Spieler 3"] = false, ["Spieler 4"] = false, ["Spieler 5"] = false }
+	pcall(ns.Recap.Render)
+	check("5 players: all shown, no '+N' row", not f.Facts.More:IsShown()
+		and not table.concat(ns.Recap.FactLines(), "\n"):find("weitere", 1, true))
 	ns.Recap.Hide()
 end
 

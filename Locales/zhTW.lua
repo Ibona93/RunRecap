@@ -36,6 +36,8 @@ ns.RegisterLocale("zhTW", {
 	FACT_GOLD = "金幣",
 	FACT_DEATHS = "死亡",
 	NO_DEATHS = "無人死亡",
+	DEATHS_MORE_ONE = "還有 %d 人",
+	DEATHS_MORE = "還有 %d 人",
 	NO_DEATH_PLAYERS = "無死亡：%s",
 	FACT_HIGHLIGHTS = "亮點",
 	HL_FASTEST = "最快首領",

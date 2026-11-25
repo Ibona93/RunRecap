@@ -62,6 +62,10 @@ Bug reports and ideas: [GitHub Issues](https://github.com/Ibona93/RunRecap/issue
 
 ## 6. Changelog
 
+### 1.0.1 (25.11.2026)
+- Fixed: rolls on items whose name contains the roll line's own words (in German e.g. "[Mantel von Doan]") were stored under wrong player names – the run facts then listed made-up players under "Deaths". Runs saved with this error are repaired automatically.
+- "Deaths" shows at most 5 players, the rest as "+N more" (hover it for the full list). The run facts no longer run into the highlights.
+
 ### 1.0.0 (24.11.2026)
 - First version: recap after the last boss with bosses (minute in the run, fight duration, end boss), loot per boss with the looter in class colour, a "Trash" section and run facts (duration, bosses, wipes, your gold, vendor value of your loot, repair costs and balance, deaths, highlights).
 - Success moment: sound and "Dungeon completed!" banner, then the recap.

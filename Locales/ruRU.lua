@@ -36,6 +36,8 @@ ns.RegisterLocale("ruRU", {
 	FACT_GOLD = "Золото",
 	FACT_DEATHS = "Смерти",
 	NO_DEATHS = "никто не умер",
+	DEATHS_MORE_ONE = "+%d ещё",
+	DEATHS_MORE = "+%d ещё",
 	NO_DEATH_PLAYERS = "Без смертей: %s",
 	FACT_HIGHLIGHTS = "Особенности",
 	HL_FASTEST = "Самый быстрый босс",

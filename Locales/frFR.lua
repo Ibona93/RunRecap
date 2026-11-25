@@ -36,6 +36,8 @@ ns.RegisterLocale("frFR", {
 	FACT_GOLD = "Or",
 	FACT_DEATHS = "Morts",
 	NO_DEATHS = "personne n'est mort",
+	DEATHS_MORE_ONE = "+%d autre",
+	DEATHS_MORE = "+%d autres",
 	NO_DEATH_PLAYERS = "Sans mort : %s",
 	FACT_HIGHLIGHTS = "Faits marquants",
 	HL_FASTEST = "Boss le plus rapide",

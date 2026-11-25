@@ -634,5 +634,60 @@ do
 	R.onComplete = nil
 end
 
+print("Item names with the format's own words (1.0.1, Kloster 25.11.2026)")
+do
+	local P, R = ns.Parse, ns.Run
+	local MANTEL = "|cnIQ2:|Hitem:7712::::::::34:1490:::::::::|h[Mantel von Doan]|h|r"
+	local greed = P.Roll(H(5000) .. "Wurf für Gold: 74 für " .. MANTEL .. " von Flutscho Butterfinger")
+	check("greed roll: item with \" von \" stays whole, player clean", greed and greed.kind == "roll"
+		and greed.link == MANTEL and greed.player == "Flutscho Butterfinger" and greed.value == 74, greed and greed.player)
+	local need = P.Roll(H(5000) .. "Wurf für eigenen Bedarf: 12 für " .. MANTEL .. " von Kojote Karl")
+	check("need roll: same", need and need.roll == "need" and need.link == MANTEL and need.player == "Kojote Karl")
+	local won = P.Roll(H(5000) .. "Gewonnen von Flutscho Butterfinger: " .. MANTEL)
+	check("won line: item with \" von \" ok", won and won.player == "Flutscho Butterfinger" and won.link == MANTEL)
+	local loot = P.Loot("Flutscho Butterfinger bekommt Beute: " .. MANTEL .. ".")
+	check("loot line: item with \" von \" ok", loot and loot.player == "Flutscho Butterfinger" and loot.link == MANTEL)
+	local plain = "|Hitem:7712|h[Mantel von Doan]|h"
+	local fb = P.Roll(H(5000) .. "Wurf für Gold: 74 für " .. plain .. " von Flutscho Butterfinger")
+	check("link without colour: no cut player name", fb == nil or not P.IsBadName(fb.player))
+	check("names with link characters are never players", R.IsPlaceholder("Doan]|h|r von Kojote Karl")
+		and not R.IsPlaceholder("Kojote Karl"))
+
+	-- old run with cut names (as in Felix' SavedVariables) is repaired
+	local broken = {
+		players = { ["Kojote Karl"] = "HUNTER", ["Flutscho Butterfinger"] = false, ["Doan]|h|r von Kojote Karl"] = false,
+			["Doan]|h|r von Flutscho Butterfinger"] = false, ["Doan]|h|r von Niemand"] = false },
+		deaths = { ["Kojote Karl"] = 1, ["Doan]|h|r von Kojote Karl"] = 2, ["Doan]|h|r von Niemand"] = 1 },
+		bossDeaths = { [1] = { "Doan]|h|r von Kojote Karl", "Doan]|h|r von Niemand", "Kojote Karl" } },
+		deadNow = {},
+		alias = { Kojote = "Kojote Karl", ["Doan]|h|r von Kojote"] = "Kojote Karl" },
+		items = { { link = MANTEL, looter = "Doan]|h|r von Flutscho Butterfinger", rolls = {
+			["Flutscho Butterfinger"] = { choice = "greed" },
+			["Doan]|h|r von Flutscho Butterfinger"] = { choice = "greed", value = 74 },
+			["Kojote Karl"] = { choice = "greed", value = 9 },
+			["Doan]|h|r von Kojote Karl"] = { choice = "greed", value = 8 },
+			["Doan]|h|r von Niemand"] = { choice = "greed", value = 3 },
+		} } },
+	}
+	check("repair reports a change", R.RepairNames(broken) == true)
+	local n = 0
+	for name in pairs(broken.players) do n = n + 1 check("repair: clean player " .. name, not P.IsBadName(name)) end
+	check("repair: only the 2 real players stay", n == 2 and broken.players["Kojote Karl"] == "HUNTER")
+	check("repair: deaths added, unknown dropped", broken.deaths["Kojote Karl"] == 3 and next(broken.deaths, next(broken.deaths)) == nil)
+	check("repair: boss deaths moved/dropped", #broken.bossDeaths[1] == 2 and broken.bossDeaths[1][1] == "Kojote Karl")
+	local it = broken.items[1]
+	check("repair: looter replaced", it.looter == "Flutscho Butterfinger")
+	check("repair: roll value taken over when missing", it.rolls["Flutscho Butterfinger"].value == 74)
+	check("repair: existing roll value kept", it.rolls["Kojote Karl"].value == 9)
+	local rn = 0 for _ in pairs(it.rolls) do rn = rn + 1 end
+	check("repair: no cut names left in rolls", rn == 2)
+	check("repair: alias cleaned", broken.alias.Kojote == "Kojote Karl" and broken.alias["Doan]|h|r von Kojote"] == nil)
+	check("repair is idempotent", R.RepairNames(broken) == false)
+	_G.RunRecapDB = { runs = { { players = { ["A B"] = false, ["x]|h|r von A B"] = false }, deaths = {}, bossDeaths = {}, items = {} } } }
+	ns.InitDB()
+	check("InitDB repairs saved runs", ns.db.runs[1].players["x]|h|r von A B"] == nil and ns.db.runs[1].players["A B"] == false)
+	_G.RunRecapDB = nil
+end
+
 print(("\n%d passed, %d failed"):format(passed, failed))
 os.exit(failed == 0 and 0 or 1)

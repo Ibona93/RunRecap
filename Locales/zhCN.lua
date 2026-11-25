@@ -36,6 +36,8 @@ ns.RegisterLocale("zhCN", {
 	FACT_GOLD = "金币",
 	FACT_DEATHS = "死亡",
 	NO_DEATHS = "无人死亡",
+	DEATHS_MORE_ONE = "还有 %d 人",
+	DEATHS_MORE = "还有 %d 人",
 	NO_DEATH_PLAYERS = "无死亡：%s",
 	FACT_HIGHLIGHTS = "亮点",
 	HL_FASTEST = "最快首领",

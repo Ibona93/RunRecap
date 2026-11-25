@@ -354,10 +354,42 @@ local function factRow(i)
 	return f
 end
 
+-- Highest the facts box may get: the highlights box keeps room for its header and 4 rows.
+local HL_MIN = 30 + 3 * 34 + 30 + 4 -- header, 4 tiles at the smallest step (34), padding
+local FACTS_MAX = RIGHT_H - HL_MIN - 6
+-- At most this many players in "Deaths", the rest as "+N more" (Felix, 25.11.2026: 10 names
+-- ran into the highlights).
+local DEATH_ROWS = 5
+
+local function deathList(s)
+	local list = {}
+	for _, d in ipairs(s.deaths) do list[#list + 1] = { name = d.name, n = d.n } end
+	-- players without a death: one row each, "0" in green (Felix, 22.11.2026)
+	for _, name in ipairs(s.noDeaths) do list[#list + 1] = { name = name, n = 0 } end
+	return list
+end
+
+local function deathColor(n)
+	if n == 0 then return W.GREEN end
+	return n >= 3 and W.YELLOW or { 1, 1, 1 }
+end
+
+function Recap.MoreDeathsTooltip(owner, run, list)
+	local l = L()
+	local tt = Tip()
+	tt:SetOwner(owner, "ANCHOR_RIGHT")
+	tt:SetText(l.FACT_DEATHS, W.GOLD[1], W.GOLD[2], W.GOLD[3])
+	for _, d in ipairs(list) do
+		local c = deathColor(d.n)
+		tt:AddDoubleLine(playerName(run, d.name), tostring(d.n), 1, 1, 1, c[1], c[2], c[3])
+	end
+	tt:Show()
+end
+
 local function renderFacts(run, s)
 	local l = L()
 	local box = frame.Facts
-	local i, y = 0, -32
+	local i, y
 	local function row(label, value, rgb, opts)
 		i = i + 1
 		local f = factRow(i)
@@ -383,7 +415,9 @@ local function renderFacts(run, s)
 		f.Value:SetTextColor(c[1], c[2], c[3])
 		f.Label:Show()
 		f.Value:Show()
+		local top = y
 		y = y - math.max(f.Label:GetStringHeight() or 14, 14) - (opts.gap or 6)
+		return top
 	end
 
 	local function separator(line)
@@ -394,39 +428,70 @@ local function renderFacts(run, s)
 		y = y - 8
 	end
 	local coins = ns.Parse.Coins
+	local deaths = deathList(s)
 
-	row(l.FACT_DURATION, ns.Parse.Clock(s.duration), nil, { gap = 4 })
-	row(l.FACT_BOSSES, ("%d/%d"):format(s.done, s.total), s.done >= s.total and W.GREEN or W.YELLOW, { gap = 4 })
-	row(l.FACT_WIPES, tostring(s.wipes), s.wipes == 0 and W.GREEN or W.YELLOW, { gap = 4 })
+	-- limit = most player rows under "Deaths"; returns where the "+N more" row is (or nil)
+	local function layout(limit)
+		i, y = 0, -32
+		row(l.FACT_DURATION, ns.Parse.Clock(s.duration), nil, { gap = 4 })
+		row(l.FACT_BOSSES, ("%d/%d"):format(s.done, s.total), s.done >= s.total and W.GREEN or W.YELLOW, { gap = 4 })
+		row(l.FACT_WIPES, tostring(s.wipes), s.wipes == 0 and W.GREEN or W.YELLOW, { gap = 4 })
 
-	-- money: own looted gold + vendor value of own loot - repair costs = balance
-	separator(box.Separator)
-	row(l.FACT_GOLD, "+ " .. coins(s.money), nil, { gap = 4 })
-	row(l.FACT_VENDOR, "+ " .. coins(s.vendor), nil, { gap = 4 })
-	row(l.FACT_REPAIR, (s.repair > 0 and "– " or "") .. coins(s.repair), nil, { gap = 4 })
-	row(l.FACT_BALANCE, (s.balance < 0 and "– " or "") .. coins(math.abs(s.balance)),
-		s.balance > 0 and W.GREEN or s.balance < 0 and W.RED or { 1, 1, 1 }, { gap = 4 })
+		-- money: own looted gold + vendor value of own loot - repair costs = balance
+		separator(box.Separator)
+		row(l.FACT_GOLD, "+ " .. coins(s.money), nil, { gap = 4 })
+		row(l.FACT_VENDOR, "+ " .. coins(s.vendor), nil, { gap = 4 })
+		row(l.FACT_REPAIR, (s.repair > 0 and "– " or "") .. coins(s.repair), nil, { gap = 4 })
+		row(l.FACT_BALANCE, (s.balance < 0 and "– " or "") .. coins(math.abs(s.balance)),
+			s.balance > 0 and W.GREEN or s.balance < 0 and W.RED or { 1, 1, 1 }, { gap = 4 })
 
-	-- deaths
-	separator(box.Separator2)
-	row(l.FACT_DEATHS, "")
-	if #s.deaths == 0 and #s.noDeaths == 0 then
-		row(l.NO_DEATHS, "", nil, { labelColor = W.GREY })
+		-- deaths
+		separator(box.Separator2)
+		row(l.FACT_DEATHS, "")
+		if #deaths == 0 then
+			row(l.NO_DEATHS, "", nil, { labelColor = W.GREY })
+		end
+		local shown = #deaths > DEATH_ROWS and math.min(limit, DEATH_ROWS) or math.min(limit, #deaths)
+		for k = 1, shown do
+			local d = deaths[k]
+			row(playerName(run, d.name), tostring(d.n), deathColor(d.n), { labelColor = { 1, 1, 1 }, gap = 4 })
+		end
+		local moreY
+		local rest = #deaths - shown
+		if rest > 0 then
+			local text = (rest == 1 and l.DEATHS_MORE_ONE or l.DEATHS_MORE):format(rest)
+			moreY = row(text, "", nil, { labelColor = W.GREY, gap = 4 })
+		end
+		return moreY
 	end
-	for _, d in ipairs(s.deaths) do
-		row(playerName(run, d.name), tostring(d.n), d.n >= 3 and W.YELLOW or { 1, 1, 1 }, { labelColor = { 1, 1, 1 }, gap = 4 })
-	end
-	-- players without a death: one row each, "0" in green (Felix, 22.11.2026)
-	for _, name in ipairs(s.noDeaths) do
-		row(playerName(run, name), "0", W.GREEN, { labelColor = { 1, 1, 1 }, gap = 4 })
+
+	-- fewer player rows if the box would push into the highlights (other fonts, long labels)
+	local limit = DEATH_ROWS
+	local moreY = layout(limit)
+	while -y + 4 > FACTS_MAX and limit > 0 do
+		limit = limit - 1
+		moreY = layout(limit)
 	end
 	for j = i + 1, #facts do
 		facts[j].Label:Hide()
 		facts[j].Value:Hide()
 	end
 
-	-- the facts box is as tall as its content; the highlights box gets the rest
-	local factsH = math.min(RIGHT_H - 170, math.max(RIGHT_H - HL_H - 6, -y + 4))
+	-- "+N more": the full list in the tooltip
+	local more = box.More
+	more:ClearAllPoints()
+	if moreY then
+		more:SetPoint("TOPLEFT", box, "TOPLEFT", 8, moreY + 2)
+		more:SetPoint("RIGHT", box, "RIGHT", -8, 0)
+		more:SetHeight(18)
+		more.run, more.list = run, deaths
+		more:Show()
+	else
+		more:Hide()
+	end
+
+	-- the facts box is as tall as its content (never into the highlights); the highlights get the rest
+	local factsH = math.min(FACTS_MAX, math.max(RIGHT_H - HL_H - 6, -y + 4))
 	box:SetHeight(factsH)
 	local hl = frame.Highlights
 	hl:SetHeight(RIGHT_H - factsH - 6)
@@ -667,6 +732,10 @@ local function create(skin)
 	frame.Facts.Header:SetText(l.RUN_FACTS)
 	frame.Facts.Separator = W.Separator(frame.Facts, skin)
 	frame.Facts.Separator2 = W.Separator(frame.Facts, skin)
+	frame.Facts.More = CreateFrame("Frame", nil, frame.Facts)
+	frame.Facts.More:EnableMouse(true)
+	frame.Facts.More:Hide()
+	hover(frame.Facts.More, function(self) Recap.MoreDeathsTooltip(self, self.run, self.list or {}) end)
 
 	frame.Hint = W.Text(frame, ns.Fonts.Text(11), W.GREEN)
 	frame.Hint:SetPoint("LEFT", frame, "BOTTOMLEFT", 16, MARGIN + BUTTON_H / 2)

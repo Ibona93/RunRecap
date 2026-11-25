@@ -50,6 +50,9 @@ function ns.InitDB()
 	if type(RunRecapDB) ~= "table" then RunRecapDB = {} end
 	ns.db = ns.MergeDefaults(RunRecapDB, ns.DEFAULTS)
 	ns.db.schema = ns.DEFAULTS.schema
+	-- 1.0.1: names cut out of item links in older runs (see Run.RepairNames)
+	for _, run in ipairs(type(ns.db.runs) == "table" and ns.db.runs or {}) do ns.Run.RepairNames(run) end
+	if ns.db.currentRun then ns.Run.RepairNames(ns.db.currentRun) end
 	return ns.db
 end
 

@@ -16,7 +16,13 @@ ns.Parse = Parse
 
 -- "%s bekommt Beute: %s." -> "^(.-) bekommt Beute: (.-)%.$", { 1, 2 }
 -- Positional arguments ("%2$s") are supported: order[capture] = argument number.
-function Parse.FormatToPattern(fmt, anchored)
+-- items = { [argNumber] = true }: these arguments are item links and get ITEM_CAPTURE instead
+-- of "(.-)" - an item name may contain the format's own words ("Wurf für Gold: %d für %s von %s"
+-- with [Mantel von Doan], Kloster 25.11.2026), the link as a whole can't be cut in two.
+local ITEM_CAPTURE = "(|c[^|]*|Hitem:.-|h%[.-%]|h|r)"
+Parse.ITEM_CAPTURE = ITEM_CAPTURE
+
+function Parse.FormatToPattern(fmt, anchored, items)
 	if type(fmt) ~= "string" or fmt == "" then return nil end
 	local out, order, i, n, seq = {}, {}, 1, #fmt, 0
 	while i <= n do
@@ -28,17 +34,25 @@ function Parse.FormatToPattern(fmt, anchored)
 				i = i + 2
 			else
 				local pos, kind, len = fmt:match("^(%d)%$([sd])()", i + 1)
+				local arg
 				if pos then
-					order[#order + 1] = tonumber(pos)
+					arg = tonumber(pos)
 					i = len
 				else
 					kind = fmt:match("^[sd]", i + 1)
 					if not kind then return nil end
 					seq = seq + 1
-					order[#order + 1] = seq
+					arg = seq
 					i = i + 2
 				end
-				out[#out + 1] = kind == "d" and "(%-?%d+)" or "(.-)"
+				order[#order + 1] = arg
+				if kind == "d" then
+					out[#out + 1] = "(%-?%d+)"
+				elseif items and items[arg] then
+					out[#out + 1] = ITEM_CAPTURE
+				else
+					out[#out + 1] = "(.-)"
+				end
 			end
 		else
 			out[#out + 1] = c:find("[%^%$%(%)%.%[%]%*%+%-%?]") and ("%" .. c) or c
@@ -51,13 +65,20 @@ function Parse.FormatToPattern(fmt, anchored)
 end
 
 -- Matches `text` against a format string; returns the arguments in the format's own order.
+-- items: see FormatToPattern (argument numbers that are item links).
 local cache = {}
-function Parse.Match(fmt, text, anchored)
+function Parse.Match(fmt, text, anchored, items)
 	if type(fmt) ~= "string" or type(text) ~= "string" or ns.IsSecret(text) then return nil end
 	local id = fmt .. (anchored == false and "\1" or "")
+	if items then
+		local keys = {}
+		for arg in pairs(items) do keys[#keys + 1] = arg end
+		table.sort(keys)
+		id = id .. "\2" .. table.concat(keys, ",")
+	end
 	local entry = cache[id]
 	if entry == nil then
-		local pattern, order = Parse.FormatToPattern(fmt, anchored)
+		local pattern, order = Parse.FormatToPattern(fmt, anchored, items)
 		entry = pattern and { pattern = pattern, order = order } or false
 		cache[id] = entry
 	end
@@ -109,6 +130,22 @@ function Parse.FirstItemLink(text)
 	return text:match("(|c[^|]*|Hitem:.-|h%[.-%]|h|r)") or text:match("(|Hitem:.-|h%[.-%]|h)")
 end
 
+-- A name with link characters is never a player name (a cut item link, see FormatToPattern).
+function Parse.IsBadName(name)
+	return type(name) == "string" and name:find("[|%[%]]") ~= nil
+end
+
+-- Match with the item argument as a whole link; a link without colour code (not seen in
+-- Forever) falls back to the plain pattern, but then the player must be a clean name.
+local function matchSpec(fmt, msg, spec)
+	if not spec.item then return Parse.Match(fmt, msg) end
+	local args = Parse.Match(fmt, msg, nil, { [spec.item] = true })
+	if args then return args end
+	args = Parse.Match(fmt, msg)
+	if args and spec.player and Parse.IsBadName(args[spec.player]) then return nil end
+	return args
+end
+
 -------------------------------------------------------------------------------
 -- Loot lines (CHAT_MSG_LOOT)
 -------------------------------------------------------------------------------
@@ -127,7 +164,7 @@ function Parse.Loot(msg, G)
 	G = G or _G
 	if type(msg) ~= "string" or msg:find("|HlootHistory:") then return nil end
 	for _, spec in ipairs(Parse.LOOT_FORMATS) do
-		local args = Parse.Match(G[spec.key], msg)
+		local args = matchSpec(G[spec.key], msg, spec)
 		if args then
 			local link = args[spec.item]
 			if link and link:find("|Hitem:") then
@@ -172,7 +209,7 @@ function Parse.Roll(msg, G)
 	G = G or _G
 	if type(msg) ~= "string" then return nil end
 	for _, spec in ipairs(Parse.ROLL_FORMATS) do
-		local args = Parse.Match(G[spec.key], msg)
+		local args = matchSpec(G[spec.key], msg, spec)
 		if args then
 			return {
 				kind = spec.kind, roll = spec.roll, self = spec.self or false,

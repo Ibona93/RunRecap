@@ -267,9 +267,105 @@ function Run.Canon(run, name)
 	return run and run.alias and run.alias[name] or name
 end
 
--- "Unbekannt"/"Unknown": the client doesn't know the name yet (UNKNOWNOBJECT)
+-- "Unbekannt"/"Unknown": the client doesn't know the name yet (UNKNOWNOBJECT). A name with
+-- link characters (| [ ]) is a cut item link, never a player (Kloster 25.11.2026).
 function Run.IsPlaceholder(name)
-	return name == nil or name == "" or name == UNKNOWNOBJECT or name == UNKNOWN
+	return name == nil or name == "" or name == UNKNOWNOBJECT or name == UNKNOWN or ns.Parse.IsBadName(name)
+end
+
+--[[
+Repair of runs recorded before 1.0.1: roll lines with an item name containing the format's own
+words ("[Mantel von Doan]") stored names like "Doan]|h|r von Flutscho Butterfinger". A bad name
+that ends with a clean player name of the run moves to that player (rolls: value only if the
+player has none; deaths added; looter replaced); otherwise it is removed. Language-independent:
+only a suffix compare. Returns true if anything was changed.
+]]
+function Run.RepairNames(run)
+	if type(run) ~= "table" then return false end
+	local bad, good = ns.Parse.IsBadName, {}
+	for name in pairs(run.players or {}) do
+		if type(name) == "string" and not bad(name) then good[#good + 1] = name end
+	end
+	-- longest name first: "Anna Kramer" wins over "Kramer"
+	table.sort(good, function(a, b) return #a > #b end)
+	local memo, fixed = {}, false
+	local function target(name)
+		if memo[name] == nil then
+			memo[name] = false
+			for _, g in ipairs(good) do
+				if #name > #g and name:sub(-#g) == g then memo[name] = g break end
+			end
+		end
+		return memo[name] or nil
+	end
+	local function collect(t)
+		local list = {}
+		for k in pairs(t) do if bad(k) then list[#list + 1] = k end end
+		return list
+	end
+	if type(run.players) == "table" then
+		for _, name in ipairs(collect(run.players)) do
+			local to = target(name)
+			if to and not run.players[to] then run.players[to] = run.players[name] end
+			run.players[name] = nil
+			fixed = true
+		end
+	end
+	if type(run.deaths) == "table" then
+		for _, name in ipairs(collect(run.deaths)) do
+			local to = target(name)
+			if to then run.deaths[to] = (run.deaths[to] or 0) + (tonumber(run.deaths[name]) or 0) end
+			run.deaths[name] = nil
+			fixed = true
+		end
+	end
+	if type(run.bossDeaths) == "table" then
+		for _, list in pairs(run.bossDeaths) do
+			if type(list) == "table" then
+				for i = #list, 1, -1 do
+					if bad(list[i]) then
+						local to = target(list[i])
+						if to then list[i] = to else table.remove(list, i) end
+						fixed = true
+					end
+				end
+			end
+		end
+	end
+	for _, item in ipairs(type(run.items) == "table" and run.items or {}) do
+		if bad(item.looter) then
+			item.looter = target(item.looter)
+			fixed = true
+		end
+		if type(item.rolls) == "table" then
+			for _, name in ipairs(collect(item.rolls)) do
+				local r, to = item.rolls[name], target(name)
+				if to and type(r) == "table" then
+					local entry = item.rolls[to] or {}
+					entry.choice = entry.choice or r.choice
+					if entry.value == nil then entry.value = r.value end
+					item.rolls[to] = entry
+				end
+				item.rolls[name] = nil
+				fixed = true
+			end
+		end
+	end
+	if type(run.alias) == "table" then
+		for short, full in pairs(run.alias) do
+			if bad(short) then
+				run.alias[short] = nil
+				fixed = true
+			elseif bad(full) then
+				run.alias[short] = target(full)
+				fixed = true
+			end
+		end
+	end
+	if type(run.deadNow) == "table" then
+		for _, name in ipairs(collect(run.deadNow)) do run.deadNow[name] = nil end
+	end
+	return fixed
 end
 
 function Run.SetPlayer(run, name, class)
@@ -605,6 +701,7 @@ function Run.OnRoll(run, r, me, now)
 	local item = dropFor(run, r.historyID, r.link, now)
 	if not item then return end
 	local who = r.self and me or r.player
+	if Run.IsPlaceholder(who) then who = nil end
 	if who then
 		Run.SetPlayer(run, who)
 		who = Run.Canon(run, who)
@@ -659,7 +756,7 @@ local function addVendorValue(run, l, rolled, me)
 end
 
 function Run.OnLoot(run, l, who, class, now)
-	if not run or run.state ~= "active" or not l or not who then return end
+	if not run or run.state ~= "active" or not l or not who or ns.Parse.IsBadName(who) then return end
 	now = now or ns.Now()
 	Run.SetPlayer(run, who, class)
 	who = Run.Canon(run, who)

@@ -36,6 +36,8 @@ ns.RegisterLocale("koKR", {
 	FACT_GOLD = "골드",
 	FACT_DEATHS = "사망",
 	NO_DEATHS = "사망자 없음",
+	DEATHS_MORE_ONE = "+%d명 더",
+	DEATHS_MORE = "+%d명 더",
 	NO_DEATH_PLAYERS = "사망 없음: %s",
 	FACT_HIGHLIGHTS = "하이라이트",
 	HL_FASTEST = "가장 빠른 우두머리",

@@ -16,7 +16,7 @@ local ICON = {
 }
 ns.NEWS_ICON = ICON
 
-ns.NEWS_ORDER = { "1.0.0" }
+ns.NEWS_ORDER = { "1.0.1", "1.0.0" }
 ns.NEWS_FIRST = "1.0.0"   -- welcome page for new users
 
 ns.NEWS_UI = {
@@ -35,6 +35,22 @@ ns.NEWS_UI = {
 }
 
 ns.NEWS = {
+	["1.0.1"] = {
+		enUS = { title = "Run Recap 1.0.1", items = {
+			{ icon = ICON.dice, title = "Rolls under the right names",
+				text = "Item names with the roll line's own words (in German e.g. \"of\" = \"von\") cut the line in the wrong place – rolls ended up under made-up player names. Fixed, and saved runs are repaired automatically." },
+			{ icon = ICON.scroll, title = "Shorter deaths list",
+				text = "\"Deaths\" shows at most 5 players, the rest as \"+N more\". The run facts no longer run into the highlights.",
+				tip = "Hover \"+N more\" to see every player" },
+		} },
+		deDE = { title = "Run Recap 1.0.1", items = {
+			{ icon = ICON.dice, title = "Würfe unter den richtigen Namen",
+				text = "Items mit „von“ im Namen (z. B. „Mantel von Doan“) haben die Würfelzeile an der falschen Stelle getrennt – die Würfe landeten unter ausgedachten Spielernamen. Behoben, gespeicherte Runs werden automatisch repariert." },
+			{ icon = ICON.scroll, title = "Kürzere Tode-Liste",
+				text = "„Tode“ zeigt höchstens 5 Spieler, der Rest steht als „+N weitere“ da. Die Fakten zum Run laufen nicht mehr in die Highlights.",
+				tip = "Maus über „+N weitere“ zeigt alle Spieler" },
+		} },
+	},
 	["1.0.0"] = {
 		enUS = { title = "Welcome to Run Recap", items = {
 			{ icon = ICON.chest, title = "Your dungeon run at a glance",
