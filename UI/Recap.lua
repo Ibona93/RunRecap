@@ -31,7 +31,8 @@ local HL_ICONS = {
 -- bottom bar: buttons 10 px from the edge (as the boxes from the sides), 10 px below the boxes
 local MARGIN, BUTTON_H = 10, 22
 local BOTTOM = MARGIN + BUTTON_H + MARGIN
-local RIGHT_H = HEIGHT - TOP - BOTTOM -- facts + gap + highlights
+-- right column height (facts + gap + highlights): follows the window height
+local function rightH() return (frame and frame:GetHeight() or HEIGHT) - TOP - BOTTOM end
 local HL_H = 30 + 4 * 37 + 6       -- highlights box: header + 4 compact rows
 
 local function L() return ns.L end
@@ -299,7 +300,7 @@ local function fillItem(r, run, item)
 	else
 		r.Player:SetText("")
 	end
-	local maxName = LEFT_W - 70 - (r.Player:GetStringWidth() or 60) - 12
+	local maxName = content:GetWidth() - 70 - (r.Player:GetStringWidth() or 60) - 12
 	r.Name:SetWidth(math.max(60, math.min(maxName, (r.Name:GetStringWidth() or 100) + 2)))
 	r.NameButton:SetWidth(r.Name:GetWidth())
 end
@@ -334,7 +335,7 @@ local function fillBoss(r, run, entry, label)
 		r.Tag:Hide()
 		r:EnableMouse(false)
 	end
-	local maxName = LEFT_W - 42 - (r.Fight:GetStringWidth() or 0) - (r.Tag:IsShown() and r.Tag:GetWidth() + 16 or 8)
+	local maxName = content:GetWidth() - 42 - (r.Fight:GetStringWidth() or 0) - (r.Tag:IsShown() and r.Tag:GetWidth() + 16 or 8)
 	r.Name:SetWidth(math.max(60, math.min(maxName, (r.Name:GetStringWidth() or 100) + 2)))
 end
 
@@ -356,7 +357,7 @@ end
 
 -- Highest the facts box may get: the highlights box keeps room for its header and 4 rows.
 local HL_MIN = 30 + 3 * 34 + 30 + 4 -- header, 4 tiles at the smallest step (34), padding
-local FACTS_MAX = RIGHT_H - HL_MIN - 6
+local function factsMax() return rightH() - HL_MIN - 6 end
 -- At most this many players in "Deaths", the rest as "+N more" (Felix, 25.11.2026: 10 names
 -- ran into the highlights).
 local DEATH_ROWS = 5
@@ -466,6 +467,7 @@ local function renderFacts(run, s)
 	end
 
 	-- fewer player rows if the box would push into the highlights (other fonts, long labels)
+	local FACTS_MAX, RIGHT_H = factsMax(), rightH()
 	local limit = DEATH_ROWS
 	local moreY = layout(limit)
 	while -y + 4 > FACTS_MAX and limit > 0 do
@@ -633,7 +635,63 @@ end
 local function savePosition()
 	if not ns.db or not frame then return end
 	local point, _, relPoint, x, y = frame:GetPoint()
-	ns.db.window = { point = point, relPoint = relPoint, x = x, y = y }
+	ns.db.window = { point = point, relPoint = relPoint, x = x, y = y,
+		w = math.floor(frame:GetWidth() + 0.5), h = math.floor(frame:GetHeight() + 0.5) }
+end
+
+-- Extra width beyond the default goes to the boss & loot list; the right column keeps its width.
+local function layoutWidth(f)
+	local extra = math.max(0, (f:GetWidth() or WIDTH) - WIDTH)
+	f.Left:SetWidth(INSET_W + extra)
+	f.Content:SetWidth(LEFT_W + extra)
+end
+
+-- Resize grip in the bottom-right corner; the default size is the minimum. Sized from the
+-- cursor's offset to the grab point (not StartSizing): past the minimum the grip waits for it.
+local function addResizeGrip(f)
+	local grip = CreateFrame("Button", nil, f)
+	grip:SetSize(16, 16)
+	grip:SetPoint("BOTTOMRIGHT", -3, 3)
+	grip:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+	grip:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+	grip:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
+	local startX, startY, startW, startH
+	local function cursor()
+		local x, y = GetCursorPosition()
+		local scale = f:GetEffectiveScale()
+		return x / scale, y / scale
+	end
+	local function onUpdate()
+		local x, y = cursor()
+		local maxW = math.max(WIDTH, (UIParent:GetWidth() or WIDTH) - f:GetLeft())
+		local maxH = math.max(HEIGHT, f:GetTop())
+		f:SetSize(math.max(WIDTH, math.min(maxW, startW + x - startX)),
+			math.max(HEIGHT, math.min(maxH, startH + startY - y)))
+	end
+	local function stop()
+		if not grip:GetScript("OnUpdate") then return end
+		grip:SetScript("OnUpdate", nil)
+		savePosition()
+	end
+	grip:SetScript("OnMouseDown", function(_, button)
+		if button ~= "LeftButton" then return end
+		-- pin the top-left corner so only the bottom-right edge moves
+		local left, top = f:GetLeft(), f:GetTop()
+		f:ClearAllPoints()
+		f:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
+		startX, startY = cursor()
+		startW, startH = f:GetWidth(), f:GetHeight()
+		grip:SetScript("OnUpdate", onUpdate)
+	end)
+	grip:SetScript("OnMouseUp", stop)
+	grip:SetScript("OnHide", stop)
+	f.ResizeGrip = grip
+	-- the grip's corner overlaps the close button: the button stays on top
+	f.Close:SetFrameLevel(grip:GetFrameLevel() + 1)
+	f:HookScript("OnSizeChanged", function(self)
+		layoutWidth(self)
+		if self == frame and self:IsShown() then Recap.Render() end
+	end)
 end
 
 -- A highlight row: icon, grey label above, white value below (compact, no background).
@@ -714,11 +772,12 @@ local function create(skin)
 	scroll:SetPoint("BOTTOMRIGHT", -28, 6)
 	content = scroll.Content
 	content:SetWidth(LEFT_W)
+	frame.Content = content
 
 	frame.Highlights = W.SkinInset(frame, skin)
 	frame.Highlights:SetPoint("BOTTOMRIGHT", -MARGIN, BOTTOM)
 	frame.Highlights:SetPoint("BOTTOMLEFT", left, "BOTTOMRIGHT", 6, 0)
-	frame.Highlights:SetHeight(RIGHT_H - 300 - 6)
+	frame.Highlights:SetHeight(rightH() - 300 - 6)
 	frame.Highlights.Header = W.Text(frame.Highlights, ns.Fonts.Heading(13), W.GOLD)
 	frame.Highlights.Header:SetPoint("TOPLEFT", 12, -9)
 	frame.Highlights.Header:SetText(l.FACT_HIGHLIGHTS)
@@ -752,6 +811,7 @@ local function create(skin)
 	frame.Options = W.SkinButton(frame, l.OPTIONS, 96, BUTTON_H, skin)
 	frame.Options:SetPoint("RIGHT", frame.Close, "LEFT", native and -2 or -6, 0)
 	frame.Options:SetScript("OnClick", function() if ns.Options then ns.Options.Open() end end)
+	addResizeGrip(frame)
 
 	local own = frame
 	frame:RegisterEvent("MODIFIER_STATE_CHANGED")
@@ -795,6 +855,13 @@ local function currentSkin() return ns.db and ns.db.skin or "blizzard" end
 local function applyPosition()
 	frame:ClearAllPoints()
 	local p = ns.db and ns.db.window
+	local w, h = WIDTH, HEIGHT
+	if p and p.w and p.h then
+		w = math.max(WIDTH, math.min(p.w, UIParent:GetWidth() or p.w))
+		h = math.max(HEIGHT, math.min(p.h, UIParent:GetHeight() or p.h))
+	end
+	frame:SetSize(w, h)
+	layoutWidth(frame)
 	if p and p.point then
 		frame:SetPoint(p.point, UIParent, p.relPoint or p.point, p.x or 0, p.y or 0)
 	else
