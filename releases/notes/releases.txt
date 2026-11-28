@@ -3,3 +3,4 @@
 # GitHub release for type "release". The ZIP must be releases/RunRecap-<version>.zip.
 1.0.0 be3e10c release
 1.0.1 cbd2fe2 release
+1.0.2 bb71237 release
