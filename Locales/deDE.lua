@@ -16,6 +16,7 @@ ns.RegisterLocale("deDE", {
 	BOSSES_LOOT = "Bosse & Beute",
 	RUN_FACTS = "Fakten zum Run",
 	SHIFT_HINT = "Umschalt gedrückt halten: Details",
+	SHOW_GREEN = "Grüne zeigen",
 	CLOSE = "Schließen",
 	OPTIONS = "Optionen",
 	FIGHT = "Kampf %s",

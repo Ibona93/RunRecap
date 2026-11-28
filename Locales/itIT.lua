@@ -16,6 +16,7 @@ ns.RegisterLocale("itIT", {
 	BOSSES_LOOT = "Boss e bottino",
 	RUN_FACTS = "Dati della run",
 	SHIFT_HINT = "Tieni premuto Maiusc: dettagli",
+	SHOW_GREEN = "Mostra verdi",
 	CLOSE = "Chiudi",
 	OPTIONS = "Opzioni",
 	FIGHT = "scontro %s",

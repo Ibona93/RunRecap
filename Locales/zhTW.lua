@@ -16,6 +16,7 @@ ns.RegisterLocale("zhTW", {
 	BOSSES_LOOT = "首領與戰利品",
 	RUN_FACTS = "本次數據",
 	SHIFT_HINT = "按住 Shift：詳細資訊",
+	SHOW_GREEN = "顯示綠色物品",
 	CLOSE = "關閉",
 	OPTIONS = "選項",
 	FIGHT = "戰鬥 %s",

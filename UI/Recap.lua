@@ -558,6 +558,7 @@ function Recap.Render()
 	local run, l = frame.run, L()
 	local showGreen = ns.db and ns.db.showGreen
 	local s = ns.Run.Summary(run, showGreen)
+	frame.Green:SetChecked(showGreen and true or false)
 	for kind in pairs(used) do
 		for i = 1, #pools[kind] do pools[kind][i]:Hide() end
 		used[kind] = 0
@@ -745,6 +746,18 @@ local function create(skin)
 	frame.Hint = W.Text(frame, ns.Fonts.Text(11), W.GREEN)
 	frame.Hint:SetPoint("LEFT", frame, "BOTTOMLEFT", 16, MARGIN + BUTTON_H / 2)
 	frame.Hint:SetText(l.SHIFT_HINT)
+
+	-- quick toggle for the "show green items" option
+	frame.Green = W.Check(frame, l.SHOW_GREEN, function() return ns.db.showGreen end, function(v)
+		ns.db.showGreen = v
+		local panel = ns.Options and ns.Options.Panel()
+		if panel and panel.Green then panel.Green:SetChecked(v) end
+		Recap.Render()
+	end)
+	frame.Green:SetSize(BUTTON_H, BUTTON_H)
+	frame.Green:SetPoint("LEFT", frame.Hint, "RIGHT", 16, 0)
+	frame.Green.Label:SetFontObject(ns.Fonts.Text(11))
+	frame.Green.Label:SetTextColor(W.GREEN[1], W.GREEN[2], W.GREEN[3])
 
 	frame.Close = W.SkinButton(frame, l.CLOSE, 96, BUTTON_H, skin)
 	frame.Close:SetPoint("BOTTOMRIGHT", -MARGIN, MARGIN)

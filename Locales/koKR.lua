@@ -16,6 +16,7 @@ ns.RegisterLocale("koKR", {
 	BOSSES_LOOT = "우두머리와 전리품",
 	RUN_FACTS = "던전 기록",
 	SHIFT_HINT = "Shift를 누르고 있으면: 자세히",
+	SHOW_GREEN = "녹색 아이템 표시",
 	CLOSE = "닫기",
 	OPTIONS = "설정",
 	FIGHT = "전투 %s",

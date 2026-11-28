@@ -16,6 +16,7 @@ ns.RegisterLocale("ptBR", {
 	BOSSES_LOOT = "Chefes e saque",
 	RUN_FACTS = "Fatos da run",
 	SHIFT_HINT = "Segure Shift: detalhes",
+	SHOW_GREEN = "Mostrar verdes",
 	CLOSE = "Fechar",
 	OPTIONS = "Opções",
 	FIGHT = "luta %s",
