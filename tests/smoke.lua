@@ -58,6 +58,11 @@ Frame.__index = function(_, key)
 	if key == "GetChecked" then return function(s) return s.__checked end end
 	if key == "GetVerticalScrollRange" then return function() return 0 end end
 	if key == "GetVerticalScroll" then return function() return 0 end end
+	if key == "SetFrameLevel" then return function(s, l) s.__level = l end end
+	if key == "GetFrameLevel" then return function(s) return s.__level or 1 end end
+	if key == "GetLeft" then return function(s) return s.__left or 100 end end
+	if key == "GetTop" then return function(s) return s.__top or 900 end end
+	if key == "GetEffectiveScale" then return function() return 1 end end
 	if key == "GetPoint" then return function() return "CENTER", nil, "CENTER", 12, 34 end end
 	if key == "HookScript" then
 		return function(s, n, fn)
@@ -354,6 +359,50 @@ do
 	local _ = findRow
 	ok, err = pcall(ns.Recap.Render)
 	check("render runs", ok, err)
+
+	-- resizable: saved size is restored, extra width goes to the boss & loot list
+	check("resize grip, close button above it", f.ResizeGrip ~= nil and f.Close:GetFrameLevel() > f.ResizeGrip:GetFrameLevel())
+	f.__scripts.OnDragStop(f)
+	check("dragging saves position and size", ns.db.window.point == "CENTER" and ns.db.window.w == 680 and ns.db.window.h == 604)
+	_G.UIParent.__w, _G.UIParent.__h = 1920, 1080
+	ns.db.window = { point = "CENTER", relPoint = "CENTER", x = 0, y = 0, w = 900, h = 760 }
+	ns.Recap.Hide()
+	ok, err = pcall(ns.Recap.Show, run)
+	check("saved size restored, list gets the extra width", ok and f:GetWidth() == 900 and f:GetHeight() == 760
+		and f.Left:GetWidth() == 408 + 220 and f.Content:GetWidth() == 372 + 220, err)
+	ns.db.window = { point = "CENTER", relPoint = "CENTER", x = 0, y = 0, w = 300, h = 5000 }
+	ns.Recap.Hide()
+	ok, err = pcall(ns.Recap.Show, run)
+	check("saved size clamped: default minimum, screen maximum", ok and f:GetWidth() == 680 and f:GetHeight() == 1080
+		and f.Left:GetWidth() == 408, err)
+	ns.db.window = nil
+	ns.Recap.Hide()
+	ns.Recap.Show(run)
+
+	-- grip drag: size follows the offset from the grab point, so past the minimum it waits
+	local grip, cx, cy = f.ResizeGrip, 1000, 500
+	_G.GetCursorPosition = function() return cx, cy end
+	local function moveTo(x, y) cx, cy = x, y grip.__scripts.OnUpdate(grip) end
+	grip.__scripts.OnMouseDown(grip, "LeftButton")
+	moveTo(1300, 400)
+	ok, err = pcall(f.__scripts.OnSizeChanged, f)
+	check("grip drag grows the window, list follows", ok and f:GetWidth() == 980 and f:GetHeight() == 704
+		and f.Content:GetWidth() == 372 + 300, err)
+	moveTo(500, 800)
+	check("past the minimum: stays at the default size", f:GetWidth() == 680 and f:GetHeight() == 604)
+	moveTo(900, 600)
+	check("coming back: no growth until the cursor passes the grab point", f:GetWidth() == 680 and f:GetHeight() == 604)
+	moveTo(1050, 480)
+	check("past the grab point: grows by the overshoot only", f:GetWidth() == 730 and f:GetHeight() == 624)
+	moveTo(5000, -5000)
+	check("grip drag stops at the screen edge", f:GetWidth() == 1920 - 100 and f:GetHeight() == 900)
+	grip.__scripts.OnMouseUp(grip)
+	check("release saves the size, drag ends", ns.db.window.w == 1820 and ns.db.window.h == 900 and grip.__scripts.OnUpdate == nil)
+	ns.db.window = nil
+	ns.Recap.Hide()
+	ns.Recap.Show(run)
+	_G.GetCursorPosition = nil
+	_G.UIParent.__w, _G.UIParent.__h = nil, nil
 
 	-- tooltips: boss row, item name, rolls (with Shift)
 	local s = ns.Run.Summary(run, false)
