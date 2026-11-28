@@ -16,6 +16,7 @@ ns.RegisterLocale("ruRU", {
 	BOSSES_LOOT = "Боссы и добыча",
 	RUN_FACTS = "Факты забега",
 	SHIFT_HINT = "Удерживайте Shift: подробности",
+	SHOW_GREEN = "Показать зелёные",
 	CLOSE = "Закрыть",
 	OPTIONS = "Настройки",
 	FIGHT = "бой %s",

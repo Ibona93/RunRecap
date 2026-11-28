@@ -388,6 +388,20 @@ do
 	check("render with green items", ok, err)
 	ns.db.showGreen = false
 
+	-- "Show greens" checkbox in the recap's bottom bar, in sync with the option
+	local rf = ns.Recap.Frame()
+	pcall(ns.Recap.Render)
+	check("recap checkbox shows the option", rf.Green and rf.Green:GetChecked() == false
+		and rf.Green.Label:GetText() == ns.L.SHOW_GREEN)
+	rf.Green:SetChecked(true)
+	ok, err = pcall(rf.Green.__scripts.OnClick, rf.Green)
+	check("recap checkbox turns greens on, options checkbox follows", ok and ns.db.showGreen == true
+		and ns.Options.Panel().Green:GetChecked() == true, err)
+	ns.Options.Panel().Green:SetChecked(false)
+	ok, err = pcall(ns.Options.Panel().Green.__scripts.OnClick, ns.Options.Panel().Green)
+	check("options checkbox turns greens off, recap checkbox follows", ok and ns.db.showGreen == false
+		and rf.Green:GetChecked() == false, err)
+
 	-- leave alive, reset -> run kept in history (completed)
 	_G.GetInstanceInfo = function() return "Orgrimmar", "none", 0, "", 0, 0, false, 1 end
 	pcall(fire, "ZONE_CHANGED_NEW_AREA")

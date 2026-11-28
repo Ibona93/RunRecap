@@ -16,6 +16,7 @@ ns.RegisterLocale("frFR", {
 	BOSSES_LOOT = "Boss et butin",
 	RUN_FACTS = "Faits du run",
 	SHIFT_HINT = "Maintenir Maj : détails",
+	SHOW_GREEN = "Afficher les verts",
 	CLOSE = "Fermer",
 	OPTIONS = "Options",
 	FIGHT = "combat %s",

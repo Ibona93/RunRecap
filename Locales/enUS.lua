@@ -17,6 +17,7 @@ ns.RegisterLocale("enUS", {
 	BOSSES_LOOT = "Bosses & loot",
 	RUN_FACTS = "Run facts",
 	SHIFT_HINT = "Hold Shift: details",
+	SHOW_GREEN = "Show greens",
 	CLOSE = "Close",
 	OPTIONS = "Options",
 	FIGHT = "fight %s",
